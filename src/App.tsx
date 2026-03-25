@@ -44,7 +44,7 @@ export default function App() {
           {/* Si entran al plan directo, redirigimos a "tareas" */}
           <Route index element={<Navigate to="tareas" replace />} />
           
-          <Route path="resumen" element={<div className="p-8 text-2xl font-bold text-gray-700">Resumen del Plan (En construcción)</div>} />
+          {/* <Route path="resumen" element={<div className="p-8 text-2xl font-bold text-gray-700">Resumen del Plan (En construcción)</div>} /> */}
           
           {/* Rutas de Tareas */}
           <Route path="tareas" element={<TareasList />} />

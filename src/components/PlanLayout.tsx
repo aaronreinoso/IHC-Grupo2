@@ -6,7 +6,7 @@ export default function PlanLayout() {
 
   // Enlaces específicos para el contexto del plan
   const planLinks = [
-    { path: `/planes-prueba/${planId}/resumen`, name: 'Resumen del Plan' },
+    // { path: `/planes-prueba/${planId}/resumen`, name: 'Resumen del Plan' },
     { path: `/planes-prueba/${planId}/tareas`, name: 'Tareas del Test' },
     { path: `/planes-prueba/${planId}/participantes`, name: 'Participantes' },
     //{ path: `/planes-prueba/${planId}/guion`, name: 'Guion del Moderador' },
