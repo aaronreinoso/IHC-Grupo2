@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import PlanLayout from './components/PlanLayout'; // <-- ¡Asegúrate de que esto exista!
 
 // Importaciones del Miembro 1 (Planes de Prueba)
-import Dashboard from './pages/Dashboard';
 import PlanesPruebaList from './pages/PlanesPruebaList';
 import PlanPrueba from './pages/PlanPrueba';
 
@@ -16,6 +15,7 @@ import TareasList from './pages/TareasList';
 import TareaForm from './pages/TareaForm';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
+import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
