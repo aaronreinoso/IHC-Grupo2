@@ -1,51 +1,49 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-
-// Importaciones del Miembro 1 (Planes de Prueba)
+import PlanLayout from './components/PlanLayout';
+// Asegúrate de importar tus componentes:
+import Dashboard from './pages/Dashboard';
 import PlanesPruebaList from './pages/PlanesPruebaList';
-import PlanPrueba from './pages/PlanPrueba';
-
-// Importaciones del Miembro 2 (Participantes y Guion del Moderador)
-import Participantes from './pages/Participantes';
-import GuionModerador from './pages/GuionModerador';
+import PlanPrueba from './pages/PlanPrueba'; // <-- Asumo que este es tu formulario para crear/editar planes
 import TareasList from './pages/TareasList';
-import TareaForm from './pages/TareaForm';
+import GuionModerador from './pages/GuionModerador';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
+import Participantes from './pages/Participantes';
+// ... importaciones del resto de páginas (Tareas, Participantes, etc.)
 
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta Padre que contiene el Sidebar y el contenedor principal */}
+        {/* 1. LAYOUT GLOBAL (Dashboard y Lista de Planes) */}
         <Route path="/" element={<Layout />}>
-          
-          {/* Dashboard (Miembro 4) */}
-          <Route index element={
-            <div className="flex flex-col items-center justify-center h-full text-center bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-10">
-              <h2 className="text-3xl font-bold text-gray-400">Dashboard Principal</h2>
-              <p className="text-gray-500 mt-2">Módulo en construcción (Miembro 4)</p>
-            </div>
-          } />
-          
-          {/* Navegación jerárquica y predecible (Criterio IHC) */}
+          <Route index element={<Dashboard />} />
           <Route path="planes-prueba" element={<PlanesPruebaList />} />
+          
+          {/* ¡AQUÍ ESTÁ LA CLAVE! 
+              Estas rutas deben estar explícitas bajo el Layout global para que 
+              React Router sepa que "nuevo" y "editar" no son un "planId" */}
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
+        </Route>
+
+        {/* 2. LAYOUT CONTEXTUAL DEL PLAN (Menú lateral específico) */}
+        <Route path="/planes-prueba/:planId" element={<PlanLayout />}>
+          {/* Redirección automática al entrar al detalle del plan */}
+          <Route index element={<Navigate to="tareas" replace />} />
           
-          {/* NUEVO: Rutas anidadas Maestro-Detalle para las Tareas */}
-          <Route path="planes-prueba/:planId/tareas" element={<TareasList />} />
-          <Route path="planes-prueba/:planId/tareas/nueva" element={<TareaForm />} />
-          <Route path="planes-prueba/:planId/tareas/editar/:tareaId" element={<TareaForm />} />
-          
+          <Route path="resumen" element={<div className="p-8 text-2xl font-bold text-gray-700">Resumen del Plan (En construcción)</div>} />
+          <Route path="tareas" element={<TareasList />} />
           <Route path="participantes" element={<Participantes />} />
           <Route path="guion" element={<GuionModerador />} />
-          
           <Route path="observaciones" element={<Observaciones />} />
           <Route path="hallazgos" element={<HallazgosMejoras />} />
-          
         </Route>
+
       </Routes>
     </BrowserRouter>
   );
 }
+
+export default App;

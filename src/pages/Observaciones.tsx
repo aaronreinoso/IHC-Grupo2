@@ -132,7 +132,7 @@ export default function Observaciones() {
     setSesionId(obs.sesion_id || '');
     setTareaId(obs.tarea_id || '');
     setExito(obs.exito || false);
-    setTiempo(obs.tiempo_segundos ?? '');
+    setTiempo(obs.tiempo_segundos ?? 0);
     setErrores(obs.errores ?? 0);
     setComentarios(obs.comentarios || '');
     setProblema(obs.problema_detectado || '');

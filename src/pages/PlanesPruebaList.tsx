@@ -164,29 +164,32 @@ const PlanesPruebaList: React.FC = () => {
                     <td style={{ padding: 10 }}>{plan.metodo}</td>
                     <td style={{ padding: 10 }}>{plan.perfil_usuarios}</td>
                     <td style={{ padding: 10 }}>{plan.duracion}</td>
-                    <td style={{ padding: 10, minWidth: '170px', textAlign: 'center' }}>
-                      <button
-                        style={{ marginRight: 8, background: '#1e88e5', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-                        onClick={() => navigate(`/planes-prueba/${plan.id}/tareas`)}
-                        aria-label={`Ver tareas del plan ${plan.producto}`}
-                      >
-                        Tareas
-                      </button>
-                      <button
-                        style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer'  }}
-                        onClick={() => navigate(`editar/${plan.id}`)}
-                        aria-label={`Editar plan de prueba de ${plan.producto}`}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-                        onClick={() => handleDelete(plan.id)}
-                        aria-label={`Eliminar plan de prueba de ${plan.producto}`}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
+                    <td style={{ padding: 10, minWidth: '220px', textAlign: 'center' }}>
+  {/* Botón Ver Detalles (Ícono de ojo) */}
+  <button
+    style={{ marginRight: 8, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+    onClick={() => navigate(`/planes-prueba/${plan.id}`)}
+    title="Ver detalles del plan"
+    aria-label={`Ver detalles del plan ${plan.producto}`}
+  >
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+  </button>
+  
+  <button
+    style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer'  }}
+    onClick={() => navigate(`editar/${plan.id}`)}
+    aria-label={`Editar plan de prueba de ${plan.producto}`}
+  >
+    Editar
+  </button>
+  <button
+    style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
+    onClick={() => handleDelete(plan.id)}
+    aria-label={`Eliminar plan de prueba de ${plan.producto}`}
+  >
+    Eliminar
+  </button>
+</td>
                   </tr>
                 ))
               )}
