@@ -10,6 +10,8 @@ import Participantes from './pages/Participantes';
 import GuionModerador from './pages/GuionModerador';
 import TareasList from './pages/TareasList';
 import TareaForm from './pages/TareaForm';
+import HallazgosMejoras from './pages/HallazgosMejoras';
+import Observaciones from './pages/Observaciones';
 
 export default function App() {
   return (
@@ -26,24 +28,20 @@ export default function App() {
             </div>
           } />
           
-          {/* --- RUTAS DEL MIEMBRO 1 --- */}
           {/* Navegación jerárquica y predecible (Criterio IHC) */}
           <Route path="planes-prueba" element={<PlanesPruebaList />} />
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
           
-          {/* Navegación para Tareas (Miembro 1) */}
           <Route path="/tareas" element={<TareasList />} />
           <Route path="/tarea" element={<TareaForm />} />
           <Route path="/tarea/:id" element={<TareaForm />} />
           
-          {/* --- RUTAS DEL MIEMBRO 2 (TU TRABAJO) --- */}
           <Route path="participantes" element={<Participantes />} />
           <Route path="guion" element={<GuionModerador />} />
           
-          {/* --- RUTAS DEL MIEMBRO 3 --- */}
-          <Route path="observaciones" element={<div className="p-10 text-center text-gray-500">Observaciones (Miembro 3)</div>} />
-          <Route path="hallazgos" element={<div className="p-10 text-center text-gray-500">Hallazgos y Mejoras (Miembro 3)</div>} />
+          <Route path="observaciones" element={<Observaciones />} />
+          <Route path="hallazgos" element={<HallazgosMejoras />} />
           
         </Route>
       </Routes>
