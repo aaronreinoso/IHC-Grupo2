@@ -5,7 +5,6 @@ export default function Layout() {
   const menuLinks = [
     { path: '/', name: 'Dashboard Inicio' },
     { path: '/planes-prueba', name: 'Plan de Prueba' },
-    { path: '/tareas', name: 'Tareas del Test' },
     { path: '/participantes', name: 'Participantes' },
     { path: '/guion', name: 'Guion del Moderador' },
     { path: '/observaciones', name: 'Registro de Observación' },

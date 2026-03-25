@@ -32,10 +32,10 @@ export default function App() {
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
           
-          {/* Navegación para Tareas (Miembro 1) */}
-          <Route path="/tareas" element={<TareasList />} />
-          <Route path="/tarea" element={<TareaForm />} />
-          <Route path="/tarea/:id" element={<TareaForm />} />
+          {/* NUEVO: Rutas anidadas Maestro-Detalle para las Tareas */}
+          <Route path="planes-prueba/:planId/tareas" element={<TareasList />} />
+          <Route path="planes-prueba/:planId/tareas/nueva" element={<TareaForm />} />
+          <Route path="planes-prueba/:planId/tareas/editar/:tareaId" element={<TareaForm />} />
           
           {/* --- RUTAS DEL MIEMBRO 2 (TU TRABAJO) --- */}
           <Route path="participantes" element={<Participantes />} />

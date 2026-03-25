@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import type { Tarea } from "../types/tarea";
 import TareasTable from "../components/TareasTable";
@@ -7,6 +7,9 @@ import TareasSearch from "../components/TareasSearch";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 
 const TareasList: React.FC = () => {
+
+  const { planId } = useParams();
+
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,7 @@ const TareasList: React.FC = () => {
         prueba_id,
         pruebas_usabilidad(producto)
       `)
+      .eq("prueba_id", planId)
       .order("id", { ascending: false });
     
     if (fetchError) setError("Error al cargar las tareas.");
@@ -86,7 +90,7 @@ const TareasList: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
         <button
           style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 'bold', fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px #0001' }}
-          onClick={() => navigate('/tarea')}
+          onClick={() => navigate(`/planes-prueba/${planId}/tareas/nueva`)}
           aria-label="Crear nueva tarea"
         >
           + Nueva Tarea
