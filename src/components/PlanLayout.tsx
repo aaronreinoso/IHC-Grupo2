@@ -9,7 +9,7 @@ export default function PlanLayout() {
     { path: `/planes-prueba/${planId}/resumen`, name: 'Resumen del Plan' },
     { path: `/planes-prueba/${planId}/tareas`, name: 'Tareas del Test' },
     { path: `/planes-prueba/${planId}/participantes`, name: 'Participantes' },
-    { path: `/planes-prueba/${planId}/guion`, name: 'Guion del Moderador' },
+    //{ path: `/planes-prueba/${planId}/guion`, name: 'Guion del Moderador' },
     { path: `/planes-prueba/${planId}/observaciones`, name: 'Registro de Observación' },
     { path: `/planes-prueba/${planId}/hallazgos`, name: 'Hallazgos y Mejoras' },
   ];

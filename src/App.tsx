@@ -1,49 +1,65 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Layouts
 import Layout from './components/Layout';
-import PlanLayout from './components/PlanLayout';
-// Asegúrate de importar tus componentes:
+import PlanLayout from './components/PlanLayout'; // <-- ¡Asegúrate de que esto exista!
+
+// Importaciones del Miembro 1 (Planes de Prueba)
 import Dashboard from './pages/Dashboard';
 import PlanesPruebaList from './pages/PlanesPruebaList';
-import PlanPrueba from './pages/PlanPrueba'; // <-- Asumo que este es tu formulario para crear/editar planes
-import TareasList from './pages/TareasList';
+import PlanPrueba from './pages/PlanPrueba';
+
+// Importaciones del Miembro 2 (Participantes y Guion del Moderador)
+import Participantes from './pages/Participantes';
 import GuionModerador from './pages/GuionModerador';
+import TareasList from './pages/TareasList';
+import TareaForm from './pages/TareaForm';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
-import Participantes from './pages/Participantes';
-// ... importaciones del resto de páginas (Tareas, Participantes, etc.)
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. LAYOUT GLOBAL (Dashboard y Lista de Planes) */}
+        
+        {/* ==========================================
+            1. LAYOUT GLOBAL (Menú principal)
+        ========================================== */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="planes-prueba" element={<PlanesPruebaList />} />
           
-          {/* ¡AQUÍ ESTÁ LA CLAVE! 
-              Estas rutas deben estar explícitas bajo el Layout global para que 
-              React Router sepa que "nuevo" y "editar" no son un "planId" */}
+          <Route index element={<Dashboard />} />
+          
+          {/* Rutas Base de Planes de Prueba */}
+          <Route path="planes-prueba" element={<PlanesPruebaList />} />
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
+          
         </Route>
 
-        {/* 2. LAYOUT CONTEXTUAL DEL PLAN (Menú lateral específico) */}
+        {/* ==========================================
+            2. LAYOUT DEL PLAN (Menú lateral secundario)
+        ========================================== */}
         <Route path="/planes-prueba/:planId" element={<PlanLayout />}>
-          {/* Redirección automática al entrar al detalle del plan */}
+          
+          {/* Si entran al plan directo, redirigimos a "tareas" */}
           <Route index element={<Navigate to="tareas" replace />} />
           
           <Route path="resumen" element={<div className="p-8 text-2xl font-bold text-gray-700">Resumen del Plan (En construcción)</div>} />
+          
+          {/* Rutas de Tareas */}
           <Route path="tareas" element={<TareasList />} />
+          <Route path="tareas/nueva" element={<TareaForm />} />
+          <Route path="tareas/editar/:tareaId" element={<TareaForm />} />
+          
+          {/* Resto de Rutas del Plan */}
           <Route path="participantes" element={<Participantes />} />
           <Route path="guion" element={<GuionModerador />} />
           <Route path="observaciones" element={<Observaciones />} />
           <Route path="hallazgos" element={<HallazgosMejoras />} />
+          
         </Route>
 
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;

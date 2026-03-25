@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { AccessibleInput } from '../components/AccessibleInput';
 import { AccessibleTextarea } from '../components/AccessibleTextarea';
@@ -6,43 +7,21 @@ import { AccessibleSelect } from '../components/AccessibleSelect';
 import Modal from '../components/Modal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
-interface Participante {
-  nombre: string;
-}
-
-interface Sesion {
-  id: string;
-  participantes?: Participante | null;
-}
-
-interface Tarea {
-  id: string;
-  escenario: string;
-}
-
+interface Participante { nombre: string; }
+interface Sesion { id: string; participantes?: Participante | null; }
+interface Tarea { id: string; escenario: string; }
 interface Observacion {
-  id: string;
-  sesion_id: string;
-  tarea_id: string;
-  exito: boolean;
-  tiempo_segundos: number;
-  errores: number;
-  comentarios: string;
-  problema_detectado: string;
-  severidad: string;
-  mejora_propuesta: string;
-  sesiones?: Sesion | null;
-  tareas?: Tarea | null;
-}
-
-interface MensajeSistema {
-  tipo: string;
-  texto: string;
+  id: string; sesion_id: string; tarea_id: string; exito: boolean;
+  tiempo_segundos: number; errores: number; comentarios: string;
+  problema_detectado: string; severidad: string; mejora_propuesta: string;
+  sesiones?: Sesion | null; tareas?: Tarea | null;
 }
 
 const ITEMS_PER_PAGE = 5;
 
 export default function Observaciones() {
+  const { planId } = useParams(); 
+
   const [observaciones, setObservaciones] = useState<Observacion[]>([]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
@@ -66,13 +45,15 @@ export default function Observaciones() {
   const [mejora, setMejora] = useState<string>('');
 
   const [loadingGuardar, setLoadingGuardar] = useState<boolean>(false);
-  const [mensaje, setMensaje] = useState<MensajeSistema>({ tipo: '', texto: '' });
+  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [feedback, setFeedback] = useState<string>(''); 
 
   useEffect(() => {
-    fetchDependencias();
-    fetchObservaciones();
-  }, []);
+    if (planId) {
+      fetchDependencias();
+      fetchObservaciones();
+    }
+  }, [planId]);
 
   useEffect(() => {
     if (feedback && !feedback.includes("Error")) {
@@ -82,61 +63,45 @@ export default function Observaciones() {
   }, [feedback]);
 
   const fetchDependencias = async () => {
-    const { data: dataTareas } = await supabase.from('tareas').select('id, escenario');
-    const { data: dataSesiones } = await supabase.from('sesiones').select('id, participantes(nombre)');
+    if (!planId) return;
+    
+    // FILTRAMOS ESTRICTAMENTE POR EL PLAN ACTUAL
+    const { data: dataTareas } = await supabase.from('tareas').select('id, escenario').eq('prueba_id', planId);
+    const { data: dataSesiones } = await supabase.from('sesiones').select('id, participantes(nombre)').eq('prueba_id', planId);
     
     if (dataTareas) setTareas(dataTareas as unknown as Tarea[]);
     if (dataSesiones) setSesiones(dataSesiones as unknown as Sesion[]);
   };
 
   const fetchObservaciones = async () => {
+    if (!planId) return;
     setLoadingDatos(true);
+    
     const { data, error } = await supabase
       .from('observaciones')
-      .select('*, tareas(escenario), sesiones(participantes(nombre))')
+      .select('*, tareas!inner(escenario, prueba_id), sesiones(participantes(nombre))')
+      .eq('tareas.prueba_id', planId)
       .order('created_at', { ascending: false });
     
-    if (!error && data) {
-      setObservaciones(data as unknown as Observacion[]);
-    }
+    if (!error && data) setObservaciones(data as unknown as Observacion[]);
     setLoadingDatos(false);
   };
 
   const resetForm = () => {
-    setEditingId(null);
-    setSesionId('');
-    setTareaId('');
-    setExito(false);
-    setTiempo('');
-    setErrores(0);
-    setComentarios('');
-    setProblema('');
-    setSeveridad('Baja');
-    setMejora('');
-    setMensaje({ tipo: '', texto: '' });
+    setEditingId(null); setSesionId(''); setTareaId(''); setExito(false);
+    setTiempo(''); setErrores(0); setComentarios(''); setProblema('');
+    setSeveridad('Baja'); setMejora(''); setMensaje({ tipo: '', texto: '' });
   };
 
-  const handleOpenModal = () => {
-    resetForm();
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    resetForm();
-  };
+  const handleOpenModal = () => { resetForm(); setIsModalOpen(true); };
+  const handleCloseModal = () => { setIsModalOpen(false); resetForm(); };
 
   const handleEdit = (obs: Observacion) => {
     resetForm();
-    setEditingId(obs.id);
-    setSesionId(obs.sesion_id || '');
-    setTareaId(obs.tarea_id || '');
-    setExito(obs.exito || false);
-    setTiempo(obs.tiempo_segundos ?? 0);
-    setErrores(obs.errores ?? 0);
-    setComentarios(obs.comentarios || '');
-    setProblema(obs.problema_detectado || '');
-    setSeveridad(obs.severidad || 'Baja');
+    setEditingId(obs.id); setSesionId(obs.sesion_id || ''); setTareaId(obs.tarea_id || '');
+    setExito(obs.exito || false); setTiempo(obs.tiempo_segundos ?? '');
+    setErrores(obs.errores ?? 0); setComentarios(obs.comentarios || '');
+    setProblema(obs.problema_detectado || ''); setSeveridad(obs.severidad || 'Baja');
     setMejora(obs.mejora_propuesta || '');
     setIsModalOpen(true);
   };
@@ -145,13 +110,8 @@ export default function Observaciones() {
     if (!deleteId) return;
     setFeedback("");
     const { error } = await supabase.from('observaciones').delete().eq('id', deleteId);
-    
-    if (error) {
-      setFeedback("Error al eliminar: " + error.message);
-    } else {
-      setFeedback("Observación eliminada correctamente.");
-      fetchObservaciones();
-    }
+    if (error) setFeedback("Error al eliminar: " + error.message);
+    else { setFeedback("Observación eliminada correctamente."); fetchObservaciones(); }
     setDeleteId(null);
   };
 
@@ -159,27 +119,14 @@ export default function Observaciones() {
     e.preventDefault();
     setMensaje({ tipo: '', texto: '' });
 
-    if (Number(tiempo) < 0) {
-       setMensaje({ tipo: 'error', texto: 'El tiempo no puede ser negativo.' });
-       return;
-    }
-
-    if (!sesionId || !tareaId || tiempo === '') {
-      setMensaje({ tipo: 'error', texto: 'Por favor, completa los campos obligatorios.' });
-      return;
-    }
+    if (Number(tiempo) < 0) { setMensaje({ tipo: 'error', texto: 'El tiempo no puede ser negativo.' }); return; }
+    if (!sesionId || !tareaId || tiempo === '') { setMensaje({ tipo: 'error', texto: 'Por favor, completa los campos obligatorios.' }); return; }
 
     setLoadingGuardar(true);
     const payload = {
-      sesion_id: sesionId,
-      tarea_id: tareaId,
-      exito,
-      tiempo_segundos: tiempo,
-      errores: errores === '' ? 0 : errores,
-      comentarios,
-      problema_detectado: problema,
-      severidad,
-      mejora_propuesta: mejora
+      sesion_id: sesionId, tarea_id: tareaId, exito, tiempo_segundos: tiempo,
+      errores: errores === '' ? 0 : errores, comentarios, problema_detectado: problema,
+      severidad, mejora_propuesta: mejora
     };
 
     let error;
@@ -192,14 +139,8 @@ export default function Observaciones() {
     }
 
     setLoadingGuardar(false);
-
-    if (error) {
-      setMensaje({ tipo: 'error', texto: `Error al ${editingId ? 'actualizar' : 'guardar'}: ` + error.message });
-    } else {
-      setFeedback(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`);
-      fetchObservaciones();
-      handleCloseModal();
-    }
+    if (error) setMensaje({ tipo: 'error', texto: `Error al ${editingId ? 'actualizar' : 'guardar'}: ` + error.message });
+    else { setFeedback(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`); fetchObservaciones(); handleCloseModal(); }
   };
 
   const filteredObservaciones = useMemo(() => {
@@ -233,11 +174,7 @@ export default function Observaciones() {
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div className="w-full md:w-1/2">
-          <input
-            type="search" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por participante, tarea o severidad..."
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm outline-none"
-          />
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por participante, tarea o severidad..." className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm outline-none" />
         </div>
         <button onClick={handleOpenModal} className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
           + Nueva Observación
@@ -267,13 +204,9 @@ export default function Observaciones() {
                   <tr key={obs.id} className="hover:bg-blue-50/50 transition-colors">
                     <td className="p-4">{obs.sesiones?.participantes?.nombre || 'N/A'}</td>
                     <td className="p-4 line-clamp-2" title={obs.tareas?.escenario}>{obs.tareas?.escenario || 'N/A'}</td>
-                    <td className="p-4 text-center">
-                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obs.exito ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{obs.exito ? 'Sí' : 'No'}</span>
-                    </td>
+                    <td className="p-4 text-center"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obs.exito ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{obs.exito ? 'Sí' : 'No'}</span></td>
                     <td className="p-4 text-center font-mono">{obs.tiempo_segundos}</td>
-                    <td className="p-4 text-center">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obs.severidad === 'Crítica' || obs.severidad === 'Alta' ? 'bg-red-100 text-red-800' : obs.severidad === 'Media' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{obs.severidad}</span>
-                    </td>
+                    <td className="p-4 text-center"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${obs.severidad === 'Crítica' || obs.severidad === 'Alta' ? 'bg-red-100 text-red-800' : obs.severidad === 'Media' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>{obs.severidad}</span></td>
                     <td className="p-4 text-center whitespace-nowrap">
                        <button onClick={() => handleEdit(obs)} className="mr-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors text-sm">Editar</button>
                        <button onClick={() => setDeleteId(obs.id)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors text-sm">Eliminar</button>
@@ -294,20 +227,22 @@ export default function Observaciones() {
         )}
       </div>
 
-      <ConfirmDeleteModal 
-        isOpen={!!deleteId} 
-        onClose={() => setDeleteId(null)} 
-        onConfirm={confirmDelete}
-        itemName="esta observación"
-      />
+      <ConfirmDeleteModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={confirmDelete} itemName="esta observación" />
 
       {isModalOpen && (
          <Modal open={isModalOpen} onClose={handleCloseModal} title={editingId ? "Editar Observación" : "Registrar Nueva Observación"}>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mensaje.texto && (
-                <div className={`p-3 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
-                  {mensaje.texto}
-                </div>
+              {mensaje.texto && (<div className={`p-3 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{mensaje.texto}</div>)}
+
+              {sesiones.length === 0 && (
+                  <div className="p-3 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-md text-sm mb-4">
+                      <strong>Aviso:</strong> No tienes participantes en este Plan. Ve a la pestaña "Participantes" para añadirlos.
+                  </div>
+              )}
+              {tareas.length === 0 && (
+                  <div className="p-3 bg-orange-50 text-orange-800 border border-orange-200 rounded-md text-sm mb-4">
+                      <strong>Aviso:</strong> No has creado tareas para este Plan. Ve a la pestaña "Tareas" para definirlas.
+                  </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -323,8 +258,8 @@ export default function Observaciones() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <AccessibleInput id="tiempo" label="Tiempo (segundos) *" type="number" value={tiempo} onChange={(e) => setTiempo(Number(e.target.value))} required min="0" />
-                <AccessibleInput id="errores" label="Cant. Errores" type="number" value={errores} onChange={(e) => setErrores(Number(e.target.value))} min="0" />
+                <AccessibleInput id="tiempo" name="tiempo" label="Tiempo (seg) *" type="number" value={tiempo} onChange={(e) => setTiempo(Number(e.target.value))} required min="0" />
+                <AccessibleInput id="errores" name="errores" label="Cant. Errores" type="number" value={errores} onChange={(e) => setErrores(Number(e.target.value))} min="0" />
                 
                 <div className="flex flex-col mb-4 pt-1">
                   <label htmlFor="exito" className="mb-2 text-sm font-semibold text-gray-800">¿Completó con éxito?</label>
@@ -334,20 +269,20 @@ export default function Observaciones() {
                 </div>
               </div>
 
-              <AccessibleTextarea id="comentarios" label="Comentarios del participante" value={comentarios} onChange={(e) => setComentarios(e.target.value)} />
+              <AccessibleTextarea id="comentarios" name="comentarios" label="Comentarios" value={comentarios} onChange={(e) => setComentarios(e.target.value)} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AccessibleInput id="problema" label="Problema Detectado" value={problema} onChange={(e) => setProblema(e.target.value)} />
-                <AccessibleSelect id="severidad" label="Severidad" value={severidad} onChange={(e) => setSeveridad(e.target.value)}>
+                <AccessibleInput id="problema" name="problema" label="Problema Detectado" value={problema} onChange={(e) => setProblema(e.target.value)} />
+                <AccessibleSelect id="severidad" name="severidad" label="Severidad" value={severidad} onChange={(e) => setSeveridad(e.target.value)}>
                    <option value="Baja">Baja</option><option value="Media">Media</option><option value="Alta">Alta</option><option value="Crítica">Crítica</option>
                 </AccessibleSelect>
               </div>
 
-              <AccessibleInput id="mejora" label="Mejora Propuesta" value={mejora} onChange={(e) => setMejora(e.target.value)} />
+              <AccessibleInput id="mejora" name="mejora" label="Mejora Propuesta" value={mejora} onChange={(e) => setMejora(e.target.value)} />
 
-              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
                 <button type="button" onClick={handleCloseModal} className="px-5 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" disabled={loadingGuardar} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-70">
+                <button type="submit" disabled={loadingGuardar || sesiones.length === 0 || tareas.length === 0} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50">
                     {loadingGuardar ? 'Guardando...' : editingId ? 'Actualizar' : 'Guardar'}
                 </button>
               </div>
