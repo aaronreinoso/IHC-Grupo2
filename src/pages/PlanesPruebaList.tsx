@@ -19,7 +19,7 @@ const PlanesPruebaList: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  // const [deleteId, setDeleteId] = useState<string | null>(null);
   const location = useLocation();
   const [feedback, setFeedback] = useState<string>(location.state?.feedback || "");
 
@@ -101,7 +101,7 @@ const PlanesPruebaList: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
         <button
           style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 'bold', fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px #0001' }}
-          onClick={() => navigate('/plan-prueba')}
+          onClick={() => navigate('nuevo')}
           aria-label="Crear nuevo plan de prueba"
         >
           + Nuevo Plan de Prueba
@@ -163,7 +163,7 @@ const PlanesPruebaList: React.FC = () => {
                     <td style={{ padding: 10 }}>
                       <button
                         style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-                        onClick={() => navigate(`/plan-prueba/${plan.id}`)}
+                        onClick={() => navigate(`editar/${plan.id}`)}
                         aria-label={`Editar plan de prueba de ${plan.producto}`}
                       >
                         Editar
