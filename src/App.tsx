@@ -25,7 +25,7 @@ export default function App() {
         {/* ==========================================
             1. LAYOUT GLOBAL (Menú principal)
         ========================================== */}
-        <Route path="/" element={<Layout />}>
+        <Route path="/IHC-Grupo2/" element={<Layout />}>
           
           <Route index element={<Dashboard />} />
           
