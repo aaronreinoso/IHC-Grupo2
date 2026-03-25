@@ -20,11 +20,12 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
         left: 0,
         width: "100vw",
         height: "100vh",
-        background: "rgba(0,0,0,0.3)",
+        background: "rgba(0,0,0,0.5)", // Un poco más oscuro para mejor contraste
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
+        padding: "20px" // Margen de seguridad para pantallas pequeñas
       }}
       onClick={onClose}
     >
@@ -38,6 +39,8 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
           padding: 32,
           boxShadow: "0 4px 24px #0002",
           position: "relative",
+          maxHeight: "90vh", // CLAVE 1: No exceder el 90% de la altura de la ventana
+          overflowY: "auto", // CLAVE 2: Activar scroll vertical si el contenido es muy largo
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -52,12 +55,13 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
             border: "none",
             fontSize: 22,
             cursor: "pointer",
-            color: "#888"
+            color: "#888",
+            zIndex: 10 // Asegurar que el botón esté por encima del contenido
           }}
         >
           ×
         </button>
-        {title && <h2 style={{ marginTop: 0 }}>{title}</h2>}
+        {title && <h2 style={{ marginTop: 0, marginBottom: "20px" }}>{title}</h2>}
         {children}
       </div>
     </div>

@@ -34,7 +34,7 @@ const TareasList: React.FC = () => {
         prueba_id,
         pruebas_usabilidad(producto)
       `)
-      .eq("prueba_id", planId)
+      .eq("prueba_id", planId) // Excelente: Filtrando por planId
       .order("id", { ascending: false });
     
     if (fetchError) setError("Error al cargar las tareas.");
@@ -47,7 +47,7 @@ const TareasList: React.FC = () => {
     if (location.state?.feedback) {
       window.history.replaceState({}, document.title);
     }
-  }, []);
+  }, [planId]); // ¡Añadí planId a las dependencias por seguridad!
 
   useEffect(() => {
     if (feedback && !feedback.startsWith("Error")) {
@@ -97,7 +97,7 @@ const TareasList: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
         <button
           style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 'bold', fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px #0001' }}
-          onClick={() => navigate(`/planes-prueba/${planId}/tareas/nueva`)}
+          onClick={() => navigate(`/planes-prueba/${planId}/tareas/nueva`)} // ESTO ESTABA BIEN
           aria-label="Crear nueva tarea"
         >
           + Nueva Tarea
@@ -136,7 +136,8 @@ const TareasList: React.FC = () => {
       {!loading && !error && (
         <TareasTable 
           tareas={filteredTareas} 
-          onEdit={(id) => navigate(`/tarea/${id}`)} 
+          // LA CORRECCIÓN ESTÁ EN LA SIGUIENTE LÍNEA:
+          onEdit={(id) => navigate(`/planes-prueba/${planId}/tareas/editar/${id}`)} 
           onDelete={(id) => handleDelete(id)} 
         />
       )}

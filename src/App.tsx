@@ -1,7 +1,11 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Layouts
 import Layout from './components/Layout';
+import PlanLayout from './components/PlanLayout'; // <-- ¡Asegúrate de que esto exista!
 
 // Importaciones del Miembro 1 (Planes de Prueba)
+import Dashboard from './pages/Dashboard';
 import PlanesPruebaList from './pages/PlanesPruebaList';
 import PlanPrueba from './pages/PlanPrueba';
 
@@ -17,34 +21,44 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta Padre que contiene el Sidebar y el contenedor principal */}
+        
+        {/* ==========================================
+            1. LAYOUT GLOBAL (Menú principal)
+        ========================================== */}
         <Route path="/" element={<Layout />}>
           
-          {/* Dashboard (Miembro 4) */}
-          <Route index element={
-            <div className="flex flex-col items-center justify-center h-full text-center bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-10">
-              <h2 className="text-3xl font-bold text-gray-400">Dashboard Principal</h2>
-              <p className="text-gray-500 mt-2">Módulo en construcción (Miembro 4)</p>
-            </div>
-          } />
+          <Route index element={<Dashboard />} />
           
-          {/* Navegación jerárquica y predecible (Criterio IHC) */}
+          {/* Rutas Base de Planes de Prueba */}
           <Route path="planes-prueba" element={<PlanesPruebaList />} />
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
           
-          {/* NUEVO: Rutas anidadas Maestro-Detalle para las Tareas */}
-          <Route path="planes-prueba/:planId/tareas" element={<TareasList />} />
-          <Route path="planes-prueba/:planId/tareas/nueva" element={<TareaForm />} />
-          <Route path="planes-prueba/:planId/tareas/editar/:tareaId" element={<TareaForm />} />
+        </Route>
+
+        {/* ==========================================
+            2. LAYOUT DEL PLAN (Menú lateral secundario)
+        ========================================== */}
+        <Route path="/planes-prueba/:planId" element={<PlanLayout />}>
           
+          {/* Si entran al plan directo, redirigimos a "tareas" */}
+          <Route index element={<Navigate to="tareas" replace />} />
+          
+          <Route path="resumen" element={<div className="p-8 text-2xl font-bold text-gray-700">Resumen del Plan (En construcción)</div>} />
+          
+          {/* Rutas de Tareas */}
+          <Route path="tareas" element={<TareasList />} />
+          <Route path="tareas/nueva" element={<TareaForm />} />
+          <Route path="tareas/editar/:tareaId" element={<TareaForm />} />
+          
+          {/* Resto de Rutas del Plan */}
           <Route path="participantes" element={<Participantes />} />
           <Route path="guion" element={<GuionModerador />} />
-          
           <Route path="observaciones" element={<Observaciones />} />
           <Route path="hallazgos" element={<HallazgosMejoras />} />
           
         </Route>
+
       </Routes>
     </BrowserRouter>
   );
