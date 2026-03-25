@@ -19,7 +19,7 @@ import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/IHC-Grupo2">
       <Routes>
         
         {/* ==========================================
