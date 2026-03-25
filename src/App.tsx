@@ -16,6 +16,7 @@ import TareasList from './pages/TareasList';
 import TareaForm from './pages/TareaForm';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
+import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
