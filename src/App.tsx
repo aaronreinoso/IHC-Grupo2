@@ -12,6 +12,7 @@ import TareasList from './pages/TareasList';
 import TareaForm from './pages/TareaForm';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
+import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
@@ -21,12 +22,7 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           
           {/* Dashboard (Miembro 4) */}
-          <Route index element={
-            <div className="flex flex-col items-center justify-center h-full text-center bg-white rounded-xl shadow-sm border border-dashed border-gray-300 p-10">
-              <h2 className="text-3xl font-bold text-gray-400">Dashboard Principal</h2>
-              <p className="text-gray-500 mt-2">Módulo en construcción (Miembro 4)</p>
-            </div>
-          } />
+          <Route path="/" element={<Dashboard />} />
           
           {/* Navegación jerárquica y predecible (Criterio IHC) */}
           <Route path="planes-prueba" element={<PlanesPruebaList />} />
