@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import PlanLayout from './components/PlanLayout'; // <-- ¡Asegúrate de que esto exista!
 
 // Importaciones del Miembro 1 (Planes de Prueba)
-import Dashboard from './pages/Dashboard';
 import PlanesPruebaList from './pages/PlanesPruebaList';
 import PlanPrueba from './pages/PlanPrueba';
 
