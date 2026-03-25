@@ -8,5 +8,5 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  base: '/IHC-Grupo2/',
+  base: '',
 })
