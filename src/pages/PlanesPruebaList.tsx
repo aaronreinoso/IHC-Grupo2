@@ -156,14 +156,14 @@ const PlanesPruebaList: React.FC = () => {
                       </button>
                       <button
                         onClick={() => navigate(`editar/${plan.id}`)}
-                        className="mr-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors"
+                        className="mr-2 px-3 py-1.5 bg-green-800 hover:bg-green-900 text-white font-medium rounded transition-colors"
                         aria-label={`Editar plan de prueba de ${plan.producto}`}
                       >
                         Editar
                       </button>
                       <button
                         onClick={() => handleDelete(plan.id)}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors"
+                        className="px-3 py-1.5 bg-red-800 hover:bg-red-900 text-white font-medium rounded transition-colors"
                         aria-label={`Eliminar plan de prueba de ${plan.producto}`}
                       >
                         Eliminar

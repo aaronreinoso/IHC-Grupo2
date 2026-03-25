@@ -59,7 +59,7 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
                   <td className="p-4 text-center whitespace-nowrap">
                     <button
                       onClick={() => onEdit(tarea.id, tarea.escenario)}
-                      className="mr-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors"
+                      className="mr-2 px-3 py-1.5 bg-green-800 hover:bg-green-900 text-white font-medium rounded transition-colors"
                       aria-label={`Editar tarea`}
                     >
                       Editar
