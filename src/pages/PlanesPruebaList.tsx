@@ -25,6 +25,7 @@ const PlanesPruebaList: React.FC = () => {
   const [feedback, setFeedback] = useState<string>(location.state?.feedback || "");
 
   const navigate = useNavigate();
+
   const fetchPlanes = async () => {
     setLoading(true);
     setError("");
@@ -36,9 +37,9 @@ const PlanesPruebaList: React.FC = () => {
     else setPlanes(data || []);
     setLoading(false);
   };
+
   useEffect(() => {
     fetchPlanes();
-    // Limpiar feedback de location después de mostrarlo
     if (location.state?.feedback) {
       window.history.replaceState({}, document.title);
     }
@@ -61,7 +62,6 @@ const PlanesPruebaList: React.FC = () => {
     setDeleteId(null);
   };
 
-  // Ocultar feedback de éxito tras 3 segundos
   useEffect(() => {
     if (feedback && !feedback.startsWith("Error")) {
       const timer = setTimeout(() => setFeedback(""), 3000);
@@ -69,7 +69,6 @@ const PlanesPruebaList: React.FC = () => {
     }
   }, [feedback]);
 
-  // Filtrado de planes según búsqueda
   const filteredPlanes = planes.filter(plan => {
     const q = search.toLowerCase();
     return (
@@ -80,123 +79,103 @@ const PlanesPruebaList: React.FC = () => {
   });
 
   return (
-    <div style={{ maxWidth: 1000, margin: "2rem auto", padding: 32, background: "#f9fafb", borderRadius: 16, boxShadow: "0 4px 24px #0002" }}>
-      <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: 24, color: '#222' }}>Plan de Prueba</h2>
-      <div style={{ marginBottom: 8 }}>
-        <input
-          type="search"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar por producto, módulo u objetivo..."
-          aria-label="Buscar plan de prueba"
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            borderRadius: 10,
-            border: '1.5px solid #b0bec5',
-            fontSize: 17,
-            outline: 'none',
-            boxShadow: '0 1px 4px #0001',
-            background: '#fff',
-            marginBottom: 0,
-          }}
-        />
+    <div className="max-w-6xl mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Planes de Prueba</h1>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
-        <button
-          style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 'bold', fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px #0001' }}
-          onClick={() => navigate('nuevo')}
-          aria-label="Crear nuevo plan de prueba"
-        >
-          + Nuevo Plan 
-        </button>
-      </div>
-      {loading && <div>Cargando...</div>}
-      {error && <div style={{ color: "red" }}>{error}</div>}
+
       {feedback && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            color: feedback.startsWith("Error") ? "#d32f2f" : "#388e3c",
-            background: feedback.startsWith("Error") ? "#ffebee" : "#e8f5e9",
-            border: `1px solid ${feedback.startsWith("Error") ? "#ffcdd2" : "#c8e6c9"}`,
-            fontWeight: "bold",
-            marginBottom: 12,
-            padding: 12,
-            borderRadius: 8,
-            fontSize: 17,
-            textAlign: 'center',
-            boxShadow: '0 2px 8px #0001',
-          }}
-        >
+        <div aria-live="polite" className={`p-4 mb-6 rounded-lg text-sm font-semibold text-center shadow-sm ${feedback.startsWith("Error") ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
           {feedback}
         </div>
       )}
+      
+      {error && (
+        <div className="p-4 mb-6 rounded-lg text-sm font-semibold text-center shadow-sm bg-red-50 text-red-700 border border-red-200" role="alert">
+          {error}
+        </div>
+      )}
 
-      {!loading && !error && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, background: '#fff', borderRadius: 8 }}>
+      {/* Controles: Búsqueda y Botón Nuevo */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div className="w-full md:w-1/2">
+          <input
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por producto, módulo u objetivo..."
+            aria-label="Buscar plan de prueba"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm outline-none"
+          />
+        </div>
+        <button
+          onClick={() => navigate('nuevo')}
+          className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+          aria-label="Crear nuevo plan de prueba"
+        >
+          + Nuevo Plan
+        </button>
+      </div>
+
+      {/* Tabla con Tailwind */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr style={{ background: "#e3eafc" }}>
-                <th style={{ padding: 10 }}>Producto</th>
-                <th style={{ padding: 10 }}>Módulo</th>
-                <th style={{ padding: 10 }}>Objetivo</th>
-                <th style={{ padding: 10 }}>Fecha</th>
-                <th style={{ padding: 10 }}>Lugar</th>
-                <th style={{ padding: 10 }}>Método</th>
-                <th style={{ padding: 10 }}>Perfil Usuarios</th>
-                <th style={{ padding: 10 }}>Duración</th>
-                <th style={{ padding: 10, textAlign: 'center' }}>Acciones</th>
+              <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+                <th className="p-4 font-semibold border-b">Producto</th>
+                <th className="p-4 font-semibold border-b">Módulo</th>
+                <th className="p-4 font-semibold border-b hidden md:table-cell">Objetivo</th>
+                <th className="p-4 font-semibold border-b text-center">Fecha</th>
+                <th className="p-4 font-semibold border-b text-center hidden lg:table-cell">Duración</th>
+                <th className="p-4 font-semibold border-b text-center">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredPlanes.length === 0 ? (
-                <tr><td colSpan={9} style={{ textAlign: "center", padding: 24 }}>No hay planes de prueba registrados.</td></tr>
+            <tbody className="divide-y divide-gray-100 text-gray-700 text-sm">
+              {loading ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">Cargando planes...</td></tr>
+              ) : filteredPlanes.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500 italic">No hay planes de prueba registrados.</td></tr>
               ) : (
                 filteredPlanes.map(plan => (
-                  <tr key={plan.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 10 }}>{plan.producto}</td>
-                    <td style={{ padding: 10 }}>{plan.modulo_evaluado}</td>
-                    <td style={{ padding: 10 }}>{plan.objetivo}</td>
-                    <td style={{ padding: 10 }}>{plan.fecha}</td>
-                    <td style={{ padding: 10 }}>{plan.lugar}</td>
-                    <td style={{ padding: 10 }}>{plan.metodo}</td>
-                    <td style={{ padding: 10 }}>{plan.perfil_usuarios}</td>
-                    <td style={{ padding: 10 }}>{plan.duracion}</td>
-                    <td style={{ padding: 10, minWidth: '220px', textAlign: 'center' }}>
-  {/* Botón Ver Detalles (Ícono de ojo) */}
-  <button
-    style={{ marginRight: 8, background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-    onClick={() => navigate(`/planes-prueba/${plan.id}`)}
-    title="Ver detalles del plan"
-    aria-label={`Ver detalles del plan ${plan.producto}`}
-  >
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-  </button>
-  
-  <button
-    style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer'  }}
-    onClick={() => navigate(`editar/${plan.id}`)}
-    aria-label={`Editar plan de prueba de ${plan.producto}`}
-  >
-    Editar
-  </button>
-  <button
-    style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-    onClick={() => handleDelete(plan.id)}
-    aria-label={`Eliminar plan de prueba de ${plan.producto}`}
-  >
-    Eliminar
-  </button>
-</td>
+                  <tr key={plan.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="p-4 font-medium">{plan.producto}</td>
+                    <td className="p-4">{plan.modulo_evaluado}</td>
+                    <td className="p-4 hidden md:table-cell"><div className="line-clamp-2" title={plan.objetivo}>{plan.objetivo}</div></td>
+                    <td className="p-4 text-center font-mono bg-gray-50/30">{plan.fecha}</td>
+                    <td className="p-4 text-center hidden lg:table-cell">{plan.duracion}</td>
+                    <td className="p-4 text-center whitespace-nowrap">
+                      {/* Botón Ver Detalles (Ícono de ojo) */}
+                      <button
+                        onClick={() => navigate(`/planes-prueba/${plan.id}`)}
+                        title="Ver detalles del plan"
+                        aria-label={`Ver detalles del plan ${plan.producto}`}
+                        className="mr-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors inline-flex items-center justify-center"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                      </button>
+                      <button
+                        onClick={() => navigate(`editar/${plan.id}`)}
+                        className="mr-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors"
+                        aria-label={`Editar plan de prueba de ${plan.producto}`}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(plan.id)}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors"
+                        aria-label={`Eliminar plan de prueba de ${plan.producto}`}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
 
       <ConfirmDeleteModal 
         isOpen={!!deleteId} 
@@ -206,8 +185,6 @@ const PlanesPruebaList: React.FC = () => {
       />
     </div>
   );
-
 }
-
 
 export default PlanesPruebaList;

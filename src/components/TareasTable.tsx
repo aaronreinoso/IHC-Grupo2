@@ -11,63 +11,73 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
   const tableRef = useRef<HTMLTableElement>(null);
 
   return (
-    <div style={{ overflowX: 'auto' }} role="region" aria-labelledby="table-caption" tabIndex={0}>
-      <table 
-        ref={tableRef}
-        style={{ width: "100%", borderCollapse: "collapse", marginTop: 8, background: '#fff', borderRadius: 8 }}
-        aria-label="Lista de tareas registradas"
-      >
-        <caption id="table-caption" className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', border: 0 }}>
-          Tabla de tareas asignadas con sus respectivos detalles y acciones
-        </caption>
-        <thead>
-          <tr style={{ background: "#e3eafc" }}>
-            <th scope="col" style={{ padding: 10, textAlign: 'left' }}>Plan Asociado</th>
-            <th scope="col" style={{ padding: 10, textAlign: 'left' }}>Escenario</th>
-            <th scope="col" style={{ padding: 10, textAlign: 'left' }}>Resultado Esperado</th>
-            <th scope="col" style={{ padding: 10, textAlign: 'left' }}>Métrica Principal</th>
-            <th scope="col" style={{ padding: 10, textAlign: 'left' }}>Criterio de Éxito</th>
-            <th scope="col" style={{ padding: 10, textAlign: 'center' }}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tareas.length === 0 ? (
-            <tr><td colSpan={6} style={{ textAlign: "center", padding: 24 }}>No hay tareas registradas.</td></tr>
-          ) : (
-            tareas.map(tarea => (
-              <tr key={tarea.id} style={{ borderBottom: '1px solid #eee' }} aria-rowindex={tareas.indexOf(tarea) + 1}>
-                <td style={{ padding: 10 }}>
-                  <span style={{ background: '#e3f2fd', color: '#1565c0', padding: '4px 8px', borderRadius: '4px', fontSize: '0.85em', fontWeight: 'bold' }}>
-                    {Array.isArray(tarea.pruebas_usabilidad) 
-                      ? tarea.pruebas_usabilidad[0]?.producto 
-                      : tarea.pruebas_usabilidad?.producto || "Sin asignar"}
-                  </span>
-                </td>
-                <td style={{ padding: 10 }}>{tarea.escenario}</td>
-                <td style={{ padding: 10 }}>{tarea.resultado_esperado}</td>
-                <td style={{ padding: 10 }}>{tarea.metrica_principal}</td>
-                <td style={{ padding: 10 }}>{tarea.criterio_exito}</td>
-                <td style={{ padding: 10, minWidth: '170px', textAlign: 'center' }}>
-                  <button
-                    style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-                    onClick={() => onEdit(tarea.id, tarea.escenario)}
-                    aria-label={`Editar tarea de escenario: ${tarea.escenario}`}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    style={{ background: '#e53935', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
-                    onClick={() => onDelete(tarea.id, tarea.escenario)}
-                    aria-label={`Eliminar tarea de escenario: ${tarea.escenario}`}
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" role="region" aria-labelledby="table-caption" tabIndex={0}>
+      <div className="overflow-x-auto">
+        <table 
+          ref={tableRef}
+          className="w-full text-left border-collapse"
+          aria-label="Lista de tareas registradas"
+        >
+          <caption id="table-caption" className="sr-only">
+            Tabla de tareas asignadas con sus respectivos detalles y acciones
+          </caption>
+          <thead>
+            <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
+              <th scope="col" className="p-4 font-semibold border-b">Plan Asociado</th>
+              <th scope="col" className="p-4 font-semibold border-b w-1/4">Escenario</th>
+              <th scope="col" className="p-4 font-semibold border-b">Resultado Esperado</th>
+              <th scope="col" className="p-4 font-semibold border-b hidden md:table-cell">Métrica Principal</th>
+              <th scope="col" className="p-4 font-semibold border-b hidden lg:table-cell">Criterio de Éxito</th>
+              <th scope="col" className="p-4 font-semibold border-b text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 text-gray-700 text-sm">
+            {tareas.length === 0 ? (
+              <tr><td colSpan={6} className="p-8 text-center text-gray-500 italic">No hay tareas registradas.</td></tr>
+            ) : (
+              tareas.map(tarea => (
+                <tr key={tarea.id} className="hover:bg-blue-50/50 transition-colors" aria-rowindex={tareas.indexOf(tarea) + 1}>
+                  <td className="p-4">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      {Array.isArray(tarea.pruebas_usabilidad) 
+                        ? tarea.pruebas_usabilidad[0]?.producto 
+                        : tarea.pruebas_usabilidad?.producto || "Sin asignar"}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <div className="line-clamp-3" title={tarea.escenario}>{tarea.escenario}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className="line-clamp-2" title={tarea.resultado_esperado}>{tarea.resultado_esperado}</div>
+                  </td>
+                  <td className="p-4 hidden md:table-cell">
+                    <div className="line-clamp-2">{tarea.metrica_principal}</div>
+                  </td>
+                  <td className="p-4 hidden lg:table-cell">
+                    <div className="line-clamp-2">{tarea.criterio_exito}</div>
+                  </td>
+                  <td className="p-4 text-center whitespace-nowrap">
+                    <button
+                      onClick={() => onEdit(tarea.id, tarea.escenario)}
+                      className="mr-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded transition-colors"
+                      aria-label={`Editar tarea`}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => onDelete(tarea.id, tarea.escenario)}
+                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded transition-colors"
+                      aria-label={`Eliminar tarea`}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

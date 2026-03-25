@@ -7,9 +7,7 @@ import TareasSearch from "../components/TareasSearch";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 
 const TareasList: React.FC = () => {
-
   const { planId } = useParams();
-
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,7 +32,7 @@ const TareasList: React.FC = () => {
         prueba_id,
         pruebas_usabilidad(producto)
       `)
-      .eq("prueba_id", planId) // Excelente: Filtrando por planId
+      .eq("prueba_id", planId)
       .order("id", { ascending: false });
     
     if (fetchError) setError("Error al cargar las tareas.");
@@ -47,7 +45,7 @@ const TareasList: React.FC = () => {
     if (location.state?.feedback) {
       window.history.replaceState({}, document.title);
     }
-  }, [planId]); // ¡Añadí planId a las dependencias por seguridad!
+  }, [planId]);
 
   useEffect(() => {
     if (feedback && !feedback.startsWith("Error")) {
@@ -82,32 +80,20 @@ const TareasList: React.FC = () => {
   });
 
   return (
-    <div style={{ maxWidth: 1000, margin: "2rem auto", padding: 32, background: "#f9fafb", borderRadius: 16, boxShadow: "0 4px 24px #0002" }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
-        <Link to="/planes-prueba" style={{ marginRight: 16, color: '#222', textDecoration: 'none' }} aria-label="Volver a la lista de planes de prueba">
-          <svg xmlns="http://www.w3.org/2000/svg" style={{ height: 28, width: 28 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="max-w-6xl mx-auto py-8">
+      {/* Cabecera */}
+      <div className="flex items-center mb-6">
+        <Link to="/planes-prueba" className="mr-4 text-gray-500 hover:text-gray-800 transition-colors" aria-label="Volver a la lista de planes de prueba">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </Link>
-        <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", color: '#222', margin: 0 }}>Tareas del Test</h2>
+        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Tareas del Test</h1>
       </div>
       
-      <TareasSearch search={search} setSearch={setSearch} />
-      
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 18 }}>
-        <button
-          style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '12px 28px', fontWeight: 'bold', fontSize: 18, cursor: 'pointer', boxShadow: '0 2px 8px #0001' }}
-          onClick={() => navigate(`/planes-prueba/${planId}/tareas/nueva`)} // ESTO ESTABA BIEN
-          aria-label="Crear nueva tarea"
-        >
-          + Nueva Tarea
-        </button>
-      </div>
-      
-      {loading && <div aria-live="polite" style={{ fontSize: 18, marginTop: 16 }}>Cargando datos...</div>}
-      
+      {/* Feedback y Errores */}
       {error && (
-        <div style={{ color: "#d32f2f", background: "#ffebee", padding: "12px", borderRadius: "8px", fontWeight: "bold" }} role="alert">
+        <div className="p-4 mb-6 rounded-lg text-sm font-semibold text-center shadow-sm bg-red-50 text-red-700 border border-red-200" role="alert">
           {error}
         </div>
       )}
@@ -116,27 +102,32 @@ const TareasList: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          style={{
-            color: feedback.startsWith("Error") ? "#d32f2f" : "#388e3c",
-            background: feedback.startsWith("Error") ? "#ffebee" : "#e8f5e9",
-            border: `1px solid ${feedback.startsWith("Error") ? "#ffcdd2" : "#c8e6c9"}`,
-            fontWeight: "bold",
-            marginBottom: 12,
-            padding: 12,
-            borderRadius: 8,
-            fontSize: 17,
-            textAlign: 'center',
-            boxShadow: '0 2px 8px #0001',
-          }}
+          className={`p-4 mb-6 rounded-lg text-sm font-semibold text-center shadow-sm ${feedback.startsWith("Error") ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}
         >
           {feedback}
         </div>
       )}
 
+      {/* Controles: Búsqueda y Botón Nuevo */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <div className="w-full md:w-1/2">
+          {/* Reutilizamos tu componente TareasSearch, pero si tiene estilos fijos, tal vez debas envolverlo o ajustarlo */}
+          <TareasSearch search={search} setSearch={setSearch} />
+        </div>
+        <Link
+          to={`/planes-prueba/${planId}/tareas/nueva`}
+          className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+          aria-label="Crear nueva tarea"
+        >
+          + Nueva Tarea
+        </Link>
+      </div>
+      
+      {loading && <div aria-live="polite" className="text-gray-500 text-center p-8">Cargando datos...</div>}
+      
       {!loading && !error && (
         <TareasTable 
           tareas={filteredTareas} 
-          // LA CORRECCIÓN ESTÁ EN LA SIGUIENTE LÍNEA:
           onEdit={(id) => navigate(`/planes-prueba/${planId}/tareas/editar/${id}`)} 
           onDelete={(id) => handleDelete(id)} 
         />
@@ -151,4 +142,5 @@ const TareasList: React.FC = () => {
     </div>
   );
 };
+
 export default TareasList;
