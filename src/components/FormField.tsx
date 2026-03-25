@@ -12,6 +12,8 @@ interface FormFieldProps {
   minLength?: number;
   maxLength?: number;
   placeholder?: string;
+  min?: number | string; // <-- Propiedad añadida
+  max?: number | string; // <-- Propiedad añadida
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -26,18 +28,27 @@ const FormField: React.FC<FormFieldProps> = ({
   minLength,
   maxLength,
   placeholder,
+  min, 
 }) => {
   const errorId = `${name}-error`;
   const counterId = `${name}-counter`;
   const describedBy = [error ? errorId : null, maxLength ? counterId : null].filter(Boolean).join(" ");
 
+  const baseInputStyles = {
+    width: "100%",
+    padding: "8px 12px",
+    borderRadius: "8px",
+    border: `1px solid ${error ? "red" : "#d1d5db"}`,
+    outline: "none",
+    fontSize: "16px",
+  };
+
   return (
     <div style={{ marginBottom: "1rem" }}>
-      <label htmlFor={name} style={{ fontWeight: "bold" }}>
+      <label htmlFor={name} style={{ fontWeight: "bold", display: "block", marginBottom: "4px" }}>
         {label}
         {required && <span style={{ color: "red" }} aria-hidden="true"> *</span>}
       </label>
-      <br />
       {as === "textarea" ? (
         <textarea
           id={name}
@@ -50,7 +61,7 @@ const FormField: React.FC<FormFieldProps> = ({
           placeholder={placeholder}
           aria-invalid={!!error}
           aria-describedby={describedBy || undefined}
-          style={{ width: "100%", minHeight: "60px", resize: "vertical" }}
+          style={{ ...baseInputStyles, minHeight: "80px", resize: "vertical" }}
         />
       ) : (
         <input
@@ -63,9 +74,10 @@ const FormField: React.FC<FormFieldProps> = ({
           minLength={minLength}
           maxLength={maxLength}
           placeholder={placeholder}
+          min={min} 
           aria-invalid={!!error}
           aria-describedby={describedBy || undefined}
-          style={{ width: "100%" }}
+          style={baseInputStyles}
         />
       )}
       {error && (
