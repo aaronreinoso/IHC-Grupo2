@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import type { Tarea } from "../types/tarea";
 import TareasTable from "../components/TareasTable";
@@ -83,7 +83,14 @@ const TareasList: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 1000, margin: "2rem auto", padding: 32, background: "#f9fafb", borderRadius: 16, boxShadow: "0 4px 24px #0002" }}>
-      <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: 24, color: '#222' }}>Tareas del Test</h2>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+        <Link to="/planes-prueba" style={{ marginRight: 16, color: '#222', textDecoration: 'none' }} aria-label="Volver a la lista de planes de prueba">
+          <svg xmlns="http://www.w3.org/2000/svg" style={{ height: 28, width: 28 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </Link>
+        <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", color: '#222', margin: 0 }}>Tareas del Test</h2>
+      </div>
       
       <TareasSearch search={search} setSearch={setSearch} />
       

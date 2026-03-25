@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { AccessibleInput } from "../components/AccessibleInput";
 import { AccessibleTextarea } from "../components/AccessibleTextarea";
@@ -103,9 +103,16 @@ export default function TareaForm() {
 
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-sm border border-gray-200 mt-10">
-      <h1 className="text-2xl font-bold text-blue-700 mb-6">
-        {editMode ? "Editar Tarea" : "Nueva Tarea"}
-      </h1>
+      <div className="flex items-center mb-6">
+        <Link to={`/planes-prueba/${planId}/tareas`} className="mr-4 text-blue-700 hover:text-blue-900" aria-label="Volver a la lista de tareas">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </Link>
+        <h1 className="text-2xl font-bold text-blue-700">
+          {editMode ? "Editar Tarea" : "Nueva Tarea"}
+        </h1>
+      </div>
       
       {feedback && (
         <div 
@@ -187,7 +194,6 @@ export default function TareaForm() {
       <ConfirmCancelModal 
         isOpen={showCancelModal} 
         onClose={() => setShowCancelModal(false)} 
-        // CORRECCIÓN: El modal de cancelación también te regresa al plan correcto
         onConfirm={() => navigate(`/planes-prueba/${planId}/tareas`)} 
       />
     </div>
