@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import FormField from "../components/FormField";
+import ConfirmCancelModal from "../components/ConfirmCancelModal";
 
 interface PlanPrueba {
   producto: string;
@@ -46,6 +47,7 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
   const [feedback, setFeedback] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   // Cargar datos si es edición
   useEffect(() => {
     if (id) {
@@ -356,7 +358,7 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
         <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
           <button 
             type="button" 
-            onClick={() => navigate('/planes-prueba')}
+            onClick={() => setShowCancelModal(true)}
             style={{ 
               fontWeight: "bold", 
               padding: '12px 24px', 
@@ -388,9 +390,14 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
           </button>
         </div>
       </form>
+      
+      <ConfirmCancelModal 
+        isOpen={showCancelModal} 
+        onClose={() => setShowCancelModal(false)} 
+        onConfirm={() => navigate('/planes-prueba')} 
+      />
     </div>
   );
-};
+}
 
 export default PlanPruebaPage;
-

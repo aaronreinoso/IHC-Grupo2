@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
 
 interface PlanPruebaItem {
   id: string;
@@ -19,7 +20,7 @@ const PlanesPruebaList: React.FC = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
-  // const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const location = useLocation();
   const [feedback, setFeedback] = useState<string>(location.state?.feedback || "");
 
@@ -43,19 +44,22 @@ const PlanesPruebaList: React.FC = () => {
     }
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     setFeedback("");
-    const confirm = window.confirm("¿Estás seguro de que deseas eliminar este plan de prueba? Esta acción no se puede deshacer.");
-    if (!confirm) return;
-    const { error } = await supabase.from("pruebas_usabilidad").delete().eq("id", id);
+    const { error } = await supabase.from("pruebas_usabilidad").delete().eq("id", deleteId);
     if (error) {
       setFeedback("Error al eliminar: " + error.message);
     } else {
       setFeedback("Plan de prueba eliminado correctamente.");
       fetchPlanes();
     }
+    setDeleteId(null);
   };
-
 
   // Ocultar feedback de éxito tras 3 segundos
   useEffect(() => {
@@ -77,7 +81,7 @@ const PlanesPruebaList: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 1000, margin: "2rem auto", padding: 32, background: "#f9fafb", borderRadius: 16, boxShadow: "0 4px 24px #0002" }}>
-      <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: 24, color: '#222' }}>Planes de Prueba</h2>
+      <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: 24, color: '#222' }}>Plan de Prueba</h2>
       <div style={{ marginBottom: 8 }}>
         <input
           type="search"
@@ -104,7 +108,7 @@ const PlanesPruebaList: React.FC = () => {
           onClick={() => navigate('nuevo')}
           aria-label="Crear nuevo plan de prueba"
         >
-          + Nuevo Plan de Prueba
+          + Nuevo Plan 
         </button>
       </div>
       {loading && <div>Cargando...</div>}
@@ -143,7 +147,7 @@ const PlanesPruebaList: React.FC = () => {
                 <th style={{ padding: 10 }}>Método</th>
                 <th style={{ padding: 10 }}>Perfil Usuarios</th>
                 <th style={{ padding: 10 }}>Duración</th>
-                <th style={{ padding: 10 }}>Acciones</th>
+                <th style={{ padding: 10, textAlign: 'center' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -160,9 +164,9 @@ const PlanesPruebaList: React.FC = () => {
                     <td style={{ padding: 10 }}>{plan.metodo}</td>
                     <td style={{ padding: 10 }}>{plan.perfil_usuarios}</td>
                     <td style={{ padding: 10 }}>{plan.duracion}</td>
-                    <td style={{ padding: 10 }}>
+                    <td style={{ padding: 10, minWidth: '170px', textAlign: 'center' }}>
                       <button
-                        style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
+                        style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer'  }}
                         onClick={() => navigate(`editar/${plan.id}`)}
                         aria-label={`Editar plan de prueba de ${plan.producto}`}
                       >
@@ -183,6 +187,13 @@ const PlanesPruebaList: React.FC = () => {
           </table>
         </div>
       )}
+
+      <ConfirmDeleteModal 
+        isOpen={!!deleteId} 
+        onClose={() => setDeleteId(null)} 
+        onConfirm={confirmDelete}
+        itemName="este plan de prueba"
+      />
     </div>
   );
 
