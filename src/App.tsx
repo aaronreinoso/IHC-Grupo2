@@ -8,6 +8,8 @@ import PlanPrueba from './pages/PlanPrueba';
 // Importaciones del Miembro 2 (Participantes y Guion del Moderador)
 import Participantes from './pages/Participantes';
 import GuionModerador from './pages/GuionModerador';
+import TareasList from './pages/TareasList';
+import TareaForm from './pages/TareaForm';
 
 export default function App() {
   return (
@@ -30,8 +32,10 @@ export default function App() {
           <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
           <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
           
-          {/* Tareas aún pendientes del Miembro 1 */}
-          <Route path="tareas" element={<div className="p-10 text-center text-gray-500">Tareas del Test (Miembro 1)</div>} />
+          {/* Navegación para Tareas (Miembro 1) */}
+          <Route path="/tareas" element={<TareasList />} />
+          <Route path="/tarea" element={<TareaForm />} />
+          <Route path="/tarea/:id" element={<TareaForm />} />
           
           {/* --- RUTAS DEL MIEMBRO 2 (TU TRABAJO) --- */}
           <Route path="participantes" element={<Participantes />} />

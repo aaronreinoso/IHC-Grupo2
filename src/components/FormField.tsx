@@ -27,11 +27,15 @@ const FormField: React.FC<FormFieldProps> = ({
   maxLength,
   placeholder,
 }) => {
+  const errorId = `${name}-error`;
+  const counterId = `${name}-counter`;
+  const describedBy = [error ? errorId : null, maxLength ? counterId : null].filter(Boolean).join(" ");
+
   return (
     <div style={{ marginBottom: "1rem" }}>
       <label htmlFor={name} style={{ fontWeight: "bold" }}>
         {label}
-        {required && <span style={{ color: "red" }}> *</span>}
+        {required && <span style={{ color: "red" }} aria-hidden="true"> *</span>}
       </label>
       <br />
       {as === "textarea" ? (
@@ -44,6 +48,8 @@ const FormField: React.FC<FormFieldProps> = ({
           minLength={minLength}
           maxLength={maxLength}
           placeholder={placeholder}
+          aria-invalid={!!error}
+          aria-describedby={describedBy || undefined}
           style={{ width: "100%", minHeight: "60px", resize: "vertical" }}
         />
       ) : (
@@ -57,10 +63,21 @@ const FormField: React.FC<FormFieldProps> = ({
           minLength={minLength}
           maxLength={maxLength}
           placeholder={placeholder}
+          aria-invalid={!!error}
+          aria-describedby={describedBy || undefined}
           style={{ width: "100%" }}
         />
       )}
-      {error && <div style={{ color: "red", fontSize: "0.9em" }}>{error}</div>}
+      {error && (
+        <div id={errorId} role="alert" style={{ color: "red", fontSize: "0.9em", marginTop: "4px" }}>
+          {error}
+        </div>
+      )}
+      {maxLength && (
+        <div id={counterId} aria-live="polite" style={{ textAlign: "right", fontSize: "0.8em", color: value.toString().length > maxLength ? "red" : "#666", marginTop: "2px" }}>
+          {value.toString().length} / {maxLength}
+        </div>
+      )}
     </div>
   );
 };
