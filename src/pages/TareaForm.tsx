@@ -1,65 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import FormField from "../components/FormField";
-import PlanDatalist from "../components/PlanDatalist";
+import { AccessibleInput } from "../components/AccessibleInput";
+import { AccessibleTextarea } from "../components/AccessibleTextarea";
 import ConfirmCancelModal from "../components/ConfirmCancelModal";
-import type { PlanPruebaShort } from "../types/plan";
 import { validateTarea } from "../utils/tareaValidation";
 import type { TareaFormState } from "../utils/tareaValidation";
 
-const initialState: TareaFormState = {
-  prueba_id: "",
-  escenario: "",
-  resultado_esperado: "",
-  metrica_principal: "",
-  criterio_exito: "",
-};
-
-const TareaForm: React.FC = () => {
-  const { id } = useParams();
+export default function TareaForm() {
+  // Ahora capturamos el planId y el tareaId desde la URL
+  const { planId, tareaId } = useParams(); 
   const navigate = useNavigate();
-  const [form, setForm] = useState<TareaFormState>(initialState);
+  const editMode = !!tareaId;
+
+  const [form, setForm] = useState<TareaFormState>({
+    prueba_id: planId || "", // Se asigna automáticamente por la URL
+    escenario: "",
+    resultado_esperado: "",
+    metrica_principal: "",
+    criterio_exito: "",
+  });
+
   const [errors, setErrors] = useState<Partial<Record<keyof TareaFormState, string>>>({});
   const [feedback, setFeedback] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [planesList, setPlanesList] = useState<PlanPruebaShort[]>([]);
-  const [inputPlanText, setInputPlanText] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
-    // Sincronizar el texto del input si estamos editando y cargamos el id
-    if (form.prueba_id && planesList.length > 0) {
-      const p = planesList.find(p => p.id === form.prueba_id);
-      if (p) setInputPlanText(p.producto);
-    }
-  }, [form.prueba_id, planesList]);
-
-  // Cargar lista de planes de prueba disponibles
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("pruebas_usabilidad")
-        .select("id, producto, duracion");
-      if (!error && data) {
-        setPlanesList(data);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (id) {
-      setEditMode(true);
+    if (editMode && tareaId) {
       (async () => {
         const { data, error } = await supabase
           .from("tareas")
           .select("*")
-          .eq("id", id)
+          .eq("id", tareaId)
           .single();
+        
         if (data) {
           setForm({
-            prueba_id: data.prueba_id || "",
+            prueba_id: data.prueba_id || planId || "",
             escenario: data.escenario || "",
             resultado_esperado: data.resultado_esperado || "",
             metrica_principal: data.metrica_principal || "",
@@ -69,13 +47,10 @@ const TareaForm: React.FC = () => {
           setFeedback("Error: No se pudo cargar la tarea.");
         }
       })();
-    } else {
-      setEditMode(false);
-      setForm(initialState);
     }
-  }, [id]);
+  }, [tareaId, editMode, planId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -84,54 +59,28 @@ const TareaForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback("");
+    
     const validationErrors = validateTarea(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      
       // Accesibilidad: Manejo de foco en el primer error
       const firstErrorField = Object.keys(validationErrors)[0];
-      const element = document.getElementsByName(firstErrorField)[0];
+      const element = document.getElementById(firstErrorField);
       if (element) {
         element.focus();
       }
-      
       return;
     }
+    
     setLoading(true);
 
-    // Validación de negocio: Verificar si la duración del plan permite agregar esta tarea
-    const selectedPlan = planesList.find(p => p.id === form.prueba_id);
-    if (selectedPlan && selectedPlan.duracion) {
-      // Convertir hh:mm:ss a minutos
-      const [h, m, s] = selectedPlan.duracion.split(':').map(Number);
-      const limitMinutes = (h || 0) * 60 + (m || 0) + ((s || 0) / 60);
-
-      // Contar tareas actuales de este plan
-      const { count } = await supabase
-        .from('tareas')
-        .select('*', { count: 'exact', head: true })
-        .eq('prueba_id', form.prueba_id);
-      
-      const currentTasks = count || 0;
-      
-      // Si estamos agregando una nueva tarea (o cambiando de plan)
-      const tasksToValidate = editMode ? currentTasks : currentTasks + 1;
-      const requiredMinutes = tasksToValidate * 2; // Regla: 2 minutos por tarea mínimo
-      
-      if (requiredMinutes > limitMinutes) {
-        setFeedback(`Error de validación: El plan seleccionado tiene una duración de ${limitMinutes} minutos, lo cual solo permite un máximo de ${Math.floor(limitMinutes / 2)} tareas (2 minutos requeridos por tarea).`);
-        setLoading(false);
-        return;
-      }
-    }
-    
     try {
       let error;
-      if (editMode && id) {
+      if (editMode && tareaId) {
         ({ error } = await supabase
           .from("tareas")
           .update(form)
-          .eq("id", id));
+          .eq("id", tareaId));
       } else {
         ({ error } = await supabase.from("tareas").insert([form]));
       }
@@ -139,7 +88,8 @@ const TareaForm: React.FC = () => {
       if (error) {
         setFeedback("Error al guardar: " + error.message);
       } else {
-        navigate("/tareas", { 
+        // CORRECCIÓN: Navegación dinámica hacia la lista de tareas del plan actual
+        navigate(`/planes-prueba/${planId}/tareas`, { 
           state: { feedback: editMode ? "¡Tarea actualizada correctamente!" : "¡Tarea guardada correctamente!" } 
         });
       }
@@ -152,113 +102,81 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div style={{
-      maxWidth: 800,
-      margin: "2.5rem auto",
-      padding: 36,
-      background: "#f9fafb",
-      borderRadius: 18,
-      boxShadow: "0 6px 32px #0002",
-      border: '1px solid #e3eafc',
-      fontFamily: 'Segoe UI, Arial, sans-serif',
-    }}>
-      <h1 style={{ fontSize: "2.3rem", fontWeight: "bold", color: '#1976d2', marginBottom: 18 }}>
-        {editMode ? "Editar Tarea" : "Nueva Tarea"}
-      </h1>
+    <div className="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-sm border border-gray-200 mt-10">
+      <div className="flex items-center mb-6">
+        <Link to={`/planes-prueba/${planId}/tareas`} className="mr-4 text-blue-700 hover:text-blue-900" aria-label="Volver a la lista de tareas">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </Link>
+        <h1 className="text-2xl font-bold text-blue-700">
+          {editMode ? "Editar Tarea" : "Nueva Tarea"}
+        </h1>
+      </div>
       
       {feedback && (
         <div 
           role="status"
           aria-live="polite"
-          style={{ 
-            color: feedback.startsWith("Error") ? "#d32f2f" : "#388e3c", 
-            fontWeight: "bold", 
-            marginBottom: 18, 
-            fontSize: 18, 
-            borderRadius: 8, 
-            background: feedback.startsWith("Error") ? "#ffebee" : "#e8f5e9", 
-            padding: 12, 
-            border: `1px solid ${feedback.startsWith("Error") ? "#ffcdd2" : "#c8e6c9"}` 
-          }}
+          className={`p-4 mb-6 rounded-lg font-bold border ${
+            feedback.startsWith("Error") 
+              ? "bg-red-50 text-red-700 border-red-200" 
+              : "bg-green-50 text-green-700 border-green-200"
+          }`}
         >
           {feedback}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 18 }} aria-label="Formulario de tareas del test">
-        <PlanDatalist
-          planesList={planesList}
-          inputPlanText={inputPlanText}
-          setInputPlanText={setInputPlanText}
-          error={errors.prueba_id}
-          onChangePlanId={(id) => {
-            handleChange({ target: { name: 'prueba_id', value: id } } as any);
-          }}
-        />
+      <form onSubmit={handleSubmit} noValidate className="space-y-6" aria-label="Formulario de tareas del test">
         
-        <FormField
-          label="Escenario:"
+        {/* Implementación de los inputs accesibles del Miembro 2 */}
+        <AccessibleTextarea
+          id="escenario"
           name="escenario"
+          label="Escenario:"
           value={form.escenario}
           onChange={handleChange}
           error={errors.escenario}
-          as="textarea"
-          minLength={20}
-          maxLength={500}
-          required
-          placeholder="Ej: El usuario debe encontrar el producto X, agregarlo al carrito y proceder a la pantalla de pago..."
+          placeholder="Ej: El usuario debe encontrar el producto X, agregarlo al carrito..."
         />
-        <FormField
-          label="Resultado Esperado:"
+        
+        <AccessibleTextarea
+          id="resultado_esperado"
           name="resultado_esperado"
+          label="Resultado Esperado:"
           value={form.resultado_esperado}
           onChange={handleChange}
           error={errors.resultado_esperado}
-          as="textarea"
-          minLength={20}
-          maxLength={500}
-          required
-          placeholder="Ej: El producto aparece en el carrito con el precio correcto y el botón de pago habilitado."
+          placeholder="Ej: El producto aparece en el carrito con el precio correcto..."
         />
-        <FormField
-          label="Métrica Principal (KPIs):"
+        
+        <AccessibleInput
+          id="metrica_principal"
           name="metrica_principal"
+          label="Métrica Principal (KPIs):"
           value={form.metrica_principal}
           onChange={handleChange}
           error={errors.metrica_principal}
-          minLength={10}
-          maxLength={250}
-          required
-          placeholder="Ej: Tiempo de consecución de la tarea, Tasa de éxito sin errores."
+          placeholder="Ej: Tiempo de consecución de la tarea, Tasa de éxito..."
         />
-        <FormField
-          label="Criterio de Éxito:"
+        
+        <AccessibleTextarea
+          id="criterio_exito"
           name="criterio_exito"
+          label="Criterio de Éxito:"
           value={form.criterio_exito}
           onChange={handleChange}
           error={errors.criterio_exito}
-          as="textarea"
-          minLength={20}
-          maxLength={300}
-          required
-          placeholder="Ej: El usuario completa el flujo en menos de 2 minutos sin asistencia ni errores críticos."
+          placeholder="Ej: El usuario completa el flujo en menos de 2 minutos sin asistencia..."
         />
 
-        <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+        <div className="flex gap-4 pt-4 border-t border-gray-100">
           <button 
             type="button" 
             onClick={() => setShowCancelModal(true)}
             aria-label="Cancelar y volver a la lista"
-            style={{ 
-              fontWeight: "bold", 
-              padding: '12px 24px', 
-              background: '#e0e0e0', 
-              color: '#333', 
-              border: 'none', 
-              borderRadius: '8px',
-              cursor: 'pointer',
-              flex: 1
-            }}
+            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-300"
           >
             Cancelar
           </button>
@@ -266,16 +184,7 @@ const TareaForm: React.FC = () => {
             type="submit" 
             disabled={loading} 
             aria-label="Guardar la tarea"
-            style={{ 
-              fontWeight: "bold", 
-              padding: '12px 24px', 
-              background: '#1976d2', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: '8px',
-              cursor: 'pointer',
-              flex: 1
-            }}
+            className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-blue-300 disabled:opacity-50"
           >
             {loading ? "Guardando..." : "Guardar Tarea"}
           </button>
@@ -285,10 +194,8 @@ const TareaForm: React.FC = () => {
       <ConfirmCancelModal 
         isOpen={showCancelModal} 
         onClose={() => setShowCancelModal(false)} 
-        onConfirm={() => navigate('/tareas')} 
+        onConfirm={() => navigate(`/planes-prueba/${planId}/tareas`)} 
       />
     </div>
   );
-};
-
-export default TareaForm;
+}

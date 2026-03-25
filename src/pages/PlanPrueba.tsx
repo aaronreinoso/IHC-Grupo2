@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import FormField from "../components/FormField";
+import { AccessibleInput } from "../components/AccessibleInput";
+import { AccessibleTextarea } from "../components/AccessibleTextarea";
 import ConfirmCancelModal from "../components/ConfirmCancelModal";
 
 interface PlanPrueba {
@@ -32,15 +33,8 @@ const initialState: PlanPrueba = {
   guion_cierre: "",
 };
 
-interface PlanPruebaPageProps {
-  id?: string | null;
-  onSuccess?: () => void;
-}
-
-const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
-  // Permite funcionar tanto con rutas como con props
-  const params = useParams();
-  const id = props.id !== undefined ? props.id : params.id;
+export default function PlanPruebaPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState<PlanPrueba>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof PlanPrueba, string>>>({});
@@ -48,7 +42,7 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  // Cargar datos si es edición
+
   useEffect(() => {
     if (id) {
       setEditMode(true);
@@ -80,10 +74,8 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
       setEditMode(false);
       setForm(initialState);
     }
-    // eslint-disable-next-line
   }, [id]);
 
-  // Validación avanzada
   const validate = (values: PlanPrueba) => {
     const newErrors: Partial<Record<keyof PlanPrueba, string>> = {};
     if (!values.producto || values.producto.length < 3) newErrors.producto = "El producto debe tener al menos 3 caracteres.";
@@ -94,7 +86,6 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
     if (!values.fecha) {
       newErrors.fecha = "La fecha es obligatoria.";
     } else {
-      // Validar que la fecha no sea pasada
       const today = new Date();
       today.setHours(0,0,0,0);
       const inputDate = new Date(values.fecha);
@@ -103,16 +94,17 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
       }
     }
     if (!values.lugar || values.lugar.length < 3) newErrors.lugar = "El lugar es obligatorio.";
-    // Validación de duración en formato hh:mm:ss
+    
     if (!/^\d{2}:\d{2}:\d{2}$/.test(values.duracion)) {
-      newErrors.duracion = "La duración debe tener el formato hh:mm:ss (ej: 01:30:00)";
+      newErrors.duracion = "La duración debe tener el formato hh:mm:ss";
     } else {
       const [h, m, s] = values.duracion.split(":").map(Number);
       if (h === 0 && m === 0 && s === 0) newErrors.duracion = "La duración no puede ser 00:00:00";
     }
-    if (!values.guion_inicio || values.guion_inicio.length < 5) newErrors.guion_inicio = "El guion de inicio es obligatorio y debe tener al menos 5 caracteres.";
-    if (!values.guion_seguimiento || values.guion_seguimiento.length < 5) newErrors.guion_seguimiento = "El guion de seguimiento es obligatorio y debe tener al menos 5 caracteres.";
-    if (!values.guion_cierre || values.guion_cierre.length < 5) newErrors.guion_cierre = "El guion de cierre es obligatorio y debe tener al menos 5 caracteres.";
+    
+    if (!values.guion_inicio || values.guion_inicio.length < 5) newErrors.guion_inicio = "Obligatorio (mínimo 5 caracteres).";
+    if (!values.guion_seguimiento || values.guion_seguimiento.length < 5) newErrors.guion_seguimiento = "Obligatorio (mínimo 5 caracteres).";
+    if (!values.guion_cierre || values.guion_cierre.length < 5) newErrors.guion_cierre = "Obligatorio (mínimo 5 caracteres).";
     return newErrors;
   };
 
@@ -122,7 +114,6 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
-  // Manejar cambio de duración con selectores
   const handleDurationChange = (type: 'h' | 'm' | 's', value: string) => {
     const [h, m, s] = form.duracion.split(":").map((v) => v.padStart(2, '0'));
     let newH = h || "00", newM = m || "00", newS = s || "00";
@@ -140,6 +131,10 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      // Accesibilidad: Mover el foco al primer error
+      const firstErrorField = Object.keys(validationErrors)[0];
+      const element = document.getElementById(firstErrorField);
+      if (element) element.focus();
       return;
     }
     setLoading(true);
@@ -152,239 +147,167 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
       fecha: form.fecha,
       lugar: form.lugar,
       duracion: form.duracion,
-      guion_inicio: form.guion_inicio || "",
-      guion_seguimiento: form.guion_seguimiento || "",
-      guion_cierre: form.guion_cierre || "",
+      guion_inicio: form.guion_inicio,
+      guion_seguimiento: form.guion_seguimiento,
+      guion_cierre: form.guion_cierre,
     };
+
     try {
       let error;
       if (editMode && id) {
-        // Update
-        ({ error } = await supabase
-          .from("pruebas_usabilidad")
-          .update(safeForm)
-          .eq("id", id));
+        ({ error } = await supabase.from("pruebas_usabilidad").update(safeForm).eq("id", id));
       } else {
-        // Create
         ({ error } = await supabase.from("pruebas_usabilidad").insert([safeForm]));
       }
+
       if (error) {
         setFeedback("Error al guardar: " + error.message);
       } else {
-        setFeedback(editMode ? "¡Plan de prueba actualizado correctamente!" : "¡Plan de prueba guardado correctamente!");
-        if (props.onSuccess) {
-          props.onSuccess();
-        } else {
-          // Pasar mensaje de éxito a la lista usando state
-          navigate("/planes-prueba", { state: { feedback: editMode ? "¡Plan de prueba actualizado correctamente!" : "¡Plan de prueba guardado correctamente!" } });
-        }
+        navigate("/planes-prueba", { state: { feedback: editMode ? "¡Plan actualizado correctamente!" : "¡Plan guardado correctamente!" } });
       }
     } catch (err) {
       setFeedback("Error inesperado al guardar.");
-      // eslint-disable-next-line no-console
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      maxWidth: 800,
-      margin: "2.5rem auto",
-      padding: 36,
-      background: "#f9fafb",
-      borderRadius: 18,
-      boxShadow: "0 6px 32px #0002",
-      border: '1px solid #e3eafc',
-      fontFamily: 'Segoe UI, Arial, sans-serif',
-    }}>
-      <h1 style={{ fontSize: "2.3rem", fontWeight: "bold", color: '#1976d2', marginBottom: 18 }}>{editMode ? "Editar Plan de Prueba" : "Nuevo Plan de Prueba"}</h1>
+    <div className="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-sm border border-gray-200 mt-10">
+      <h1 className="text-2xl font-bold text-blue-700 mb-6">
+        {editMode ? "Editar Plan de Prueba" : "Nuevo Plan de Prueba"}
+      </h1>
+
       {feedback && (
-        <div style={{ color: feedback.startsWith("¡Plan de prueba guardado") || feedback.startsWith("¡Plan de prueba actualizado") ? "#388e3c" : "#d32f2f", fontWeight: "bold", marginBottom: 18, fontSize: 18, borderRadius: 8, background: '#fff', padding: 12, border: '1px solid #e0e0e0' }}>
+        <div 
+          role="status"
+          aria-live="polite"
+          className={`p-4 mb-6 rounded-lg font-bold border ${
+            feedback.startsWith("Error") 
+              ? "bg-red-50 text-red-700 border-red-200" 
+              : "bg-green-50 text-green-700 border-green-200"
+          }`}
+        >
           {feedback}
         </div>
       )}
-      <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <FormField
-          label="Producto:"
-          name="producto"
-          value={form.producto}
-          onChange={handleChange}
-          error={errors.producto}
-          minLength={3}
-          required
-          placeholder="Ej: sistema ventas"
-        />
-        <FormField
-          label="Módulo evaluado:"
-          name="modulo"
-          value={form.modulo}
-          onChange={handleChange}
-          error={errors.modulo}
-          minLength={3}
-          required
-          placeholder="Ej: inventario"
-        />
-        <FormField
-          label="Objetivo:"
-          name="objetivo"
-          value={form.objetivo}
-          onChange={handleChange}
-          error={errors.objetivo}
-          as="textarea"
-          minLength={10}
-          required
-          placeholder="Describe el objetivo de la prueba"
-        />
-        <FormField
-          label="Perfil de usuarios:"
-          name="perfilUsuarios"
-          value={form.perfilUsuarios}
-          onChange={handleChange}
-          error={errors.perfilUsuarios}
-          minLength={3}
-          required
-          placeholder="Ej: admin, usuario final"
-        />
-        <FormField
-          label="Método:"
-          name="metodo"
-          value={form.metodo}
-          onChange={handleChange}
-          error={errors.metodo}
-          minLength={3}
-          required
-          placeholder="Ej: Observación directa"
-        />
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "bold" }}>
-            Fecha:<span style={{ color: 'red' }}>*</span>
-          </label><br />
-          <input
-            type="date"
-            name="fecha"
-            value={form.fecha}
-            onChange={handleChange}
-            min={new Date().toISOString().split('T')[0]}
-            required
-            style={{ width: '100%', padding: 8, fontSize: 16, border: errors.fecha ? '1px solid red' : undefined, borderRadius: 4 }}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AccessibleInput
+            id="producto" name="producto" label="Producto:"
+            value={form.producto} onChange={handleChange} error={errors.producto}
+            placeholder="Ej: Sistema ventas" required
           />
-          {errors.fecha && (
-            <div style={{ color: "red", fontSize: 13 }}>{errors.fecha}</div>
-          )}
+          <AccessibleInput
+            id="modulo" name="modulo" label="Módulo evaluado:"
+            value={form.modulo} onChange={handleChange} error={errors.modulo}
+            placeholder="Ej: Inventario" required
+          />
         </div>
-        <FormField
-          label="Lugar:"
-          name="lugar"
-          value={form.lugar}
-          onChange={handleChange}
-          error={errors.lugar}
-          minLength={3}
-          required
-          placeholder="Ej: laboratorio 1"
+
+        <AccessibleTextarea
+          id="objetivo" name="objetivo" label="Objetivo de la prueba:"
+          value={form.objetivo} onChange={handleChange} error={errors.objetivo}
+          placeholder="Describe el objetivo principal..." required rows={3}
         />
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontWeight: "bold" }}>Duración (hh:mm:ss):</label><br />
-          <select
-            value={form.duracion.split(":")[0] || "00"}
-            onChange={e => handleDurationChange('h', e.target.value)}
-            style={{ marginRight: 4 }}
-            required
-          >
-            {[...Array(13)].map((_, i) => (
-              <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-            ))}
-          </select>
-          :
-          <select
-            value={form.duracion.split(":")[1] || "00"}
-            onChange={e => handleDurationChange('m', e.target.value)}
-            style={{ margin: "0 4px" }}
-            required
-          >
-            {[...Array(60)].map((_, i) => (
-              <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-            ))}
-          </select>
-          :
-          <select
-            value={form.duracion.split(":")[2] || "00"}
-            onChange={e => handleDurationChange('s', e.target.value)}
-            style={{ marginLeft: 4 }}
-            required
-          >
-            {[...Array(60)].map((_, i) => (
-              <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-            ))}
-          </select>
-          {errors.duracion && (
-            <div style={{ color: "red", fontSize: 13 }}>{errors.duracion}</div>
-          )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AccessibleInput
+            id="perfilUsuarios" name="perfilUsuarios" label="Perfil de usuarios:"
+            value={form.perfilUsuarios} onChange={handleChange} error={errors.perfilUsuarios}
+            placeholder="Ej: Estudiantes universitarios" required
+          />
+          <AccessibleInput
+            id="metodo" name="metodo" label="Método:"
+            value={form.metodo} onChange={handleChange} error={errors.metodo}
+            placeholder="Ej: Moderado remoto" required
+          />
         </div>
-        <FormField
-          label="Guion de inicio:"
-          name="guion_inicio"
-          value={form.guion_inicio}
-          onChange={handleChange}
-          error={errors.guion_inicio}
-          as="textarea"
-          minLength={5}
-          required
-          placeholder="Bienvenida, instrucciones iniciales, etc."
-        />
-        <FormField
-          label="Guion de seguimiento:"
-          name="guion_seguimiento"
-          value={form.guion_seguimiento}
-          onChange={handleChange}
-          error={errors.guion_seguimiento}
-          as="textarea"
-          minLength={5}
-          required
-          placeholder="Instrucciones, preguntas, observaciones durante la prueba"
-        />
-        <FormField
-          label="Guion de cierre:"
-          name="guion_cierre"
-          value={form.guion_cierre}
-          onChange={handleChange}
-          error={errors.guion_cierre}
-          as="textarea"
-          minLength={5}
-          required
-          placeholder="Agradecimientos, cierre, etc."
-        />
-        <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AccessibleInput
+            id="fecha" name="fecha" type="date" label="Fecha programada:"
+            value={form.fecha} onChange={handleChange} error={errors.fecha}
+            min={new Date().toISOString().split('T')[0]} required
+          />
+          <AccessibleInput
+            id="lugar" name="lugar" label="Lugar / Canal:"
+            value={form.lugar} onChange={handleChange} error={errors.lugar}
+            placeholder="Ej: Zoom / Lab 1" required
+          />
+        </div>
+
+        {/* Input especial para duración adaptado a Tailwind */}
+        <div className="flex flex-col mb-4">
+          <label className="mb-1 text-sm font-semibold text-gray-800">
+            Duración estimada (hh:mm:ss):
+          </label>
+          <div className="flex items-center gap-2">
+            <select
+              value={form.duracion.split(":")[0] || "00"}
+              onChange={e => handleDurationChange('h', e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {[...Array(13)].map((_, i) => (
+                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+              ))}
+            </select>
+            <span className="font-bold text-gray-500">:</span>
+            <select
+              value={form.duracion.split(":")[1] || "00"}
+              onChange={e => handleDurationChange('m', e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {[...Array(60)].map((_, i) => (
+                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+              ))}
+            </select>
+            <span className="font-bold text-gray-500">:</span>
+            <select
+              value={form.duracion.split(":")[2] || "00"}
+              onChange={e => handleDurationChange('s', e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {[...Array(60)].map((_, i) => (
+                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+              ))}
+            </select>
+          </div>
+          {errors.duracion && <span className="mt-1 text-sm text-red-600 font-medium">{errors.duracion}</span>}
+        </div>
+
+        <div className="pt-4 border-t border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Guion del Moderador (Borrador Inicial)</h3>
+          <AccessibleTextarea
+            id="guion_inicio" name="guion_inicio" label="Guion de inicio:"
+            value={form.guion_inicio} onChange={handleChange} error={errors.guion_inicio}
+            placeholder="Instrucciones iniciales..." required rows={2}
+          />
+          <AccessibleTextarea
+            id="guion_seguimiento" name="guion_seguimiento" label="Guion de seguimiento:"
+            value={form.guion_seguimiento} onChange={handleChange} error={errors.guion_seguimiento}
+            placeholder="Preguntas durante la prueba..." required rows={2}
+          />
+          <AccessibleTextarea
+            id="guion_cierre" name="guion_cierre" label="Guion de cierre:"
+            value={form.guion_cierre} onChange={handleChange} error={errors.guion_cierre}
+            placeholder="Agradecimientos y preguntas finales..." required rows={2}
+          />
+        </div>
+
+        <div className="flex gap-4 pt-4 border-t border-gray-100">
           <button 
             type="button" 
             onClick={() => setShowCancelModal(true)}
-            style={{ 
-              fontWeight: "bold", 
-              padding: '12px 24px', 
-              background: '#e0e0e0', 
-              color: '#333', 
-              border: 'none', 
-              borderRadius: '8px',
-              cursor: 'pointer',
-              flex: 1
-            }}
+            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-300"
           >
             Cancelar
           </button>
           <button 
             type="submit" 
             disabled={loading} 
-            style={{ 
-              fontWeight: "bold", 
-              padding: '12px 24px', 
-              background: '#1976d2', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: '8px',
-              cursor: 'pointer',
-              flex: 1
-            }}
+            className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-blue-300 disabled:opacity-50"
           >
             {loading ? "Guardando..." : "Guardar Plan de Prueba"}
           </button>
@@ -399,5 +322,3 @@ const PlanPruebaPage: React.FC<PlanPruebaPageProps> = (props) => {
     </div>
   );
 }
-
-export default PlanPruebaPage;

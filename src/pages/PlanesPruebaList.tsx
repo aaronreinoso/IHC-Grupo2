@@ -166,6 +166,13 @@ const PlanesPruebaList: React.FC = () => {
                     <td style={{ padding: 10 }}>{plan.duracion}</td>
                     <td style={{ padding: 10, minWidth: '170px', textAlign: 'center' }}>
                       <button
+                        style={{ marginRight: 8, background: '#1e88e5', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer' }}
+                        onClick={() => navigate(`/planes-prueba/${plan.id}/tareas`)}
+                        aria-label={`Ver tareas del plan ${plan.producto}`}
+                      >
+                        Tareas
+                      </button>
+                      <button
                         style={{ marginRight: 8, background: '#43a047', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 'bold', cursor: 'pointer'  }}
                         onClick={() => navigate(`editar/${plan.id}`)}
                         aria-label={`Editar plan de prueba de ${plan.producto}`}
