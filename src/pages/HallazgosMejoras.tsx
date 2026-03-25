@@ -226,19 +226,14 @@ export default function HallazgosMejoras() {
       {isModalOpen && (
          <Modal open={isModalOpen} onClose={handleCloseModal} title={editingId ? "Editar Hallazgo" : "Registrar Nuevo Hallazgo"}>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {mensaje.texto && (<div className={`p-3 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{mensaje.texto}</div>)}
+              {mensaje.texto && (<div className={`p-3 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{mensaje.texto}</div>)}              
 
-              {/* Indicador visual en lugar del ComboBox */}
-              <div style={{ padding: '12px', background: '#e3f2fd', borderRadius: '8px', border: '1px solid #90caf9', color: '#0d47a1', fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>
-                 Asociado al Plan ID: {planId}
-              </div>
-
-              <AccessibleTextarea id="problema" name="problema" label="Problema *" value={problema} onChange={(e) => setProblema(e.target.value)} required />
-              <AccessibleTextarea id="evidencia" name="evidencia" label="Evidencia Observada *" value={evidencia} onChange={(e) => setEvidencia(e.target.value)} required />
-              <AccessibleTextarea id="recomendacion" name="recomendacion" label="Recomendación de Mejora *" value={recomendacion} onChange={(e) => setRecomendacion(e.target.value)} required />
+              <AccessibleTextarea id="problema" name="problema" label="Problema *" value={problema} onChange={(e) => setProblema(e.target.value)} placeholder="Ej: El botón de envío no se ve correctamente en dispositivos móviles" required />
+              <AccessibleTextarea id="evidencia" name="evidencia" label="Evidencia Observada *" value={evidencia} onChange={(e) => setEvidencia(e.target.value)} placeholder="Ej: Se realizaron pruebas en Samsung Galaxy A10 con sistema operativo Android 9..." required />
+              <AccessibleTextarea id="recomendacion" name="recomendacion" label="Recomendación de Mejora *" value={recomendacion} onChange={(e) => setRecomendacion(e.target.value)} placeholder="Ej: Aumentar el tamaño del botón y usar colores con mayor contraste" required />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <AccessibleInput id="frecuencia" name="frecuencia" label="Frecuencia *" value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)} required />
+                <AccessibleInput id="frecuencia" name="frecuencia" label="Frecuencia *" value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)} placeholder="Ej: 7 de 10 usuarios" required />
                 
                 <AccessibleSelect id="severidad" name="severidad" label="Severidad" value={severidad} onChange={(e) => setSeveridad(e.target.value)}>
                    <option value="Baja">Baja</option><option value="Media">Media</option><option value="Alta">Alta</option><option value="Crítica">Crítica</option>

@@ -258,8 +258,8 @@ export default function Observaciones() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <AccessibleInput id="tiempo" name="tiempo" label="Tiempo (seg) *" type="number" value={tiempo} onChange={(e) => setTiempo(Number(e.target.value))} required min="0" />
-                <AccessibleInput id="errores" name="errores" label="Cant. Errores" type="number" value={errores} onChange={(e) => setErrores(Number(e.target.value))} min="0" />
+                <AccessibleInput id="tiempo" name="tiempo" label="Tiempo (seg) *" type="number" value={tiempo} onChange={(e) => setTiempo(Number(e.target.value))} placeholder="Ej: 120" required min="0" />
+                <AccessibleInput id="errores" name="errores" label="Cant. Errores" type="number" value={errores} onChange={(e) => setErrores(Number(e.target.value))} placeholder="Ej: 2" min="0" />
                 
                 <div className="flex flex-col mb-4 pt-1">
                   <label htmlFor="exito" className="mb-2 text-sm font-semibold text-gray-800">¿Completó con éxito?</label>
@@ -269,16 +269,16 @@ export default function Observaciones() {
                 </div>
               </div>
 
-              <AccessibleTextarea id="comentarios" name="comentarios" label="Comentarios" value={comentarios} onChange={(e) => setComentarios(e.target.value)} />
+              <AccessibleTextarea id="comentarios" name="comentarios" label="Comentarios" value={comentarios} onChange={(e) => setComentarios(e.target.value)} placeholder="Ej: El usuario se confundió al buscar la opción de guardar. Tuvo que hacer clic en el menú desplegable" />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AccessibleInput id="problema" name="problema" label="Problema Detectado" value={problema} onChange={(e) => setProblema(e.target.value)} />
+                <AccessibleInput id="problema" name="problema" label="Problema Detectado" value={problema} onChange={(e) => setProblema(e.target.value)} placeholder="Ej: Dificultad para encontrar la sección de configuración" />
                 <AccessibleSelect id="severidad" name="severidad" label="Severidad" value={severidad} onChange={(e) => setSeveridad(e.target.value)}>
                    <option value="Baja">Baja</option><option value="Media">Media</option><option value="Alta">Alta</option><option value="Crítica">Crítica</option>
                 </AccessibleSelect>
               </div>
 
-              <AccessibleInput id="mejora" name="mejora" label="Mejora Propuesta" value={mejora} onChange={(e) => setMejora(e.target.value)} />
+              <AccessibleInput id="mejora" name="mejora" label="Mejora Propuesta" value={mejora} onChange={(e) => setMejora(e.target.value)} placeholder="Ej: Añadir un acceso directo a la sección de configuración en el menú principal" />
 
               <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
                 <button type="button" onClick={handleCloseModal} className="px-5 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50">Cancelar</button>

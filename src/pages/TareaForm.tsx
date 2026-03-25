@@ -152,9 +152,7 @@ const TareaForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         
-        <div style={{ padding: '12px', background: '#e3f2fd', borderRadius: '8px', border: '1px solid #90caf9', color: '#0d47a1', fontWeight: 'bold', marginBottom: '8px' }}>
-            Asociada al Plan ID: {planId}
-        </div>
+        
         
         <AccessibleTextarea 
           id="escenario" 
