@@ -33,7 +33,7 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
           </thead>
           <tbody className="divide-y divide-gray-100 text-gray-700 text-sm">
             {tareas.length === 0 ? (
-              <tr><td colSpan={6} className="p-8 text-center text-gray-500 italic">No hay tareas registradas.</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-gray-500 italic">No hay tareas registradas para este plan.</td></tr>
             ) : (
               tareas.map(tarea => (
                 <tr key={tarea.id} className="hover:bg-blue-50/50 transition-colors" aria-rowindex={tareas.indexOf(tarea) + 1}>

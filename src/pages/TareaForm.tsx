@@ -127,7 +127,7 @@ const TareaForm: React.FC = () => {
         setFeedback("Error al guardar: " + error.message);
       } else {
         navigate(`/planes-prueba/${planId}/tareas`, { 
-          state: { feedback: editMode ? "¡Tarea actualizada correctamente!" : "¡Tarea guardada correctamente!" } 
+          state: { feedback: editMode ? "¡Tarea actualizada correctamente!" : "¡Tarea guardada correctamente, !" } 
         });
       }
     } catch (err) {

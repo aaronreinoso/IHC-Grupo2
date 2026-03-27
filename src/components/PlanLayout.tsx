@@ -1,17 +1,47 @@
-import { NavLink, Outlet, useParams, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
+
 
 export default function PlanLayout() {
   const { planId } = useParams<{ planId: string }>();
   const navigate = useNavigate();
 
+  // Estado para saber si hay tareas y participantes
+  const [hasTarea, setHasTarea] = useState(false);
+  const [hasParticipante, setHasParticipante] = useState(false);
+
+  // Consultar si existen tareas y participantes para el plan actual
+  const location = useLocation();
+  useEffect(() => {
+    async function fetchData() {
+      if (!planId) return;
+      // Consultar tareas asociadas al plan (prueba)
+      const { count: tareasCount } = await supabase
+        .from('tareas')
+        .select('*', { count: 'exact', head: true })
+        .eq('prueba_id', planId);
+      setHasTarea((tareasCount || 0) > 0);
+      // Consultar sesiones asociadas al plan (participantes asignados a la prueba)
+      const { count: sesionesCount } = await supabase
+        .from('sesiones')
+        .select('*', { count: 'exact', head: true })
+        .eq('prueba_id', planId);
+      setHasParticipante((sesionesCount || 0) > 0);
+    }
+    fetchData();
+    // Escuchar evento personalizado para refrescar
+    const handler = () => fetchData();
+    window.addEventListener('plan-refresh', handler);
+    return () => window.removeEventListener('plan-refresh', handler);
+  }, [planId, location.pathname]);
+
   // Enlaces específicos para el contexto del plan
   const planLinks = [
-    // { path: `/planes-prueba/${planId}/resumen`, name: 'Resumen del Plan' },
-    { path: `/planes-prueba/${planId}/tareas`, name: 'Tareas del Test' },
-    { path: `/planes-prueba/${planId}/participantes`, name: 'Participantes' },
-    //{ path: `/planes-prueba/${planId}/guion`, name: 'Guion del Moderador' },
-    { path: `/planes-prueba/${planId}/observaciones`, name: 'Registro de Observación' },
-    { path: `/planes-prueba/${planId}/hallazgos`, name: 'Hallazgos y Mejoras' },
+    { path: `/planes-prueba/${planId}/tareas`, name: 'Tareas del Test', enabled: true },
+    { path: `/planes-prueba/${planId}/participantes`, name: 'Participantes', enabled: true },
+    { path: `/planes-prueba/${planId}/observaciones`, name: 'Registro de Observación', enabled: hasTarea && hasParticipante },
+    { path: `/planes-prueba/${planId}/hallazgos`, name: 'Hallazgos y Mejoras', enabled: hasTarea && hasParticipante },
   ];
 
   return (
@@ -32,19 +62,29 @@ export default function PlanLayout() {
         
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {planLinks.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              className={({ isActive }) =>
-                `block px-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-                  isActive
-                    ? 'bg-blue-600 text-white font-semibold shadow-md translate-x-1'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`
-              }
-            >
-              {link.name}
-            </NavLink>
+            link.enabled ? (
+              <NavLink
+                key={link.path}
+                to={link.path}
+                className={({ isActive }) =>
+                  `block px-4 py-3 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    isActive
+                      ? 'bg-blue-600 text-white font-semibold shadow-md translate-x-1'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  }`
+                }
+              >
+                {link.name}
+              </NavLink>
+            ) : (
+              <span
+                key={link.path}
+                className="block px-4 py-3 rounded-lg bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed select-none"
+                title="Debes agregar al menos una tarea y un participante para habilitar esta sección"
+              >
+                {link.name}
+              </span>
+            )
           ))}
         </nav>
       </aside>

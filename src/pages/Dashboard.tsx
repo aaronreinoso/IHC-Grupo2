@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
   
   // Estados para las métricas generales
   const [metricas, setMetricas] = useState({
@@ -91,8 +92,36 @@ export default function Dashboard() {
     );
   }
 
+  
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">
+      {/* Botón flotante de ayuda */}
+      <button
+        aria-label="Mostrar ayuda del Dashboard"
+        className="fixed top-6 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
+        onClick={() => setShowHelp((prev) => !prev)}
+        type="button"
+      >
+        <span className="text-2xl font-bold">?</span>
+      </button>
+
+      {/* Mensaje de ayuda (divulgación progresiva) */}
+      {showHelp && (
+        <div className="fixed top-20 right-8 z-50 bg-white border border-blue-200 rounded-lg shadow-lg p-4 max-w-xs animate-fade-in">
+          <div className="flex items-start gap-2">
+            <span className="text-blue-600 text-2xl mt-1"></span>
+            <div>
+              <p className="text-blue-800 font-semibold mb-1">¿Nuevo aquí?</p>
+              <p className="text-blue-700 text-sm mb-2">Este Dashboard es solo un resumen general del sistema. Para gestionar o ver los planes de prueba, navega a la sección <span className="font-bold">‘Planes de Prueba’</span> en el menú o haz clic en <Link to="/planes-prueba" className="underline hover:text-blue-900">Ver Planes de Prueba.</Link></p>
+              <button
+                className="mt-1 text-xs text-blue-600 hover:underline focus:outline-none"
+                onClick={() => setShowHelp(false)}
+                type="button"
+              >Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <header>
         <h1 className="text-3xl font-bold text-gray-800">Dashboard de Usabilidad</h1>

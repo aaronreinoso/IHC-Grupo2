@@ -32,7 +32,7 @@ const PlanesPruebaList: React.FC = () => {
     const { data, error } = await supabase
       .from("pruebas_usabilidad")
       .select("id, producto, modulo_evaluado, objetivo, fecha, lugar, metodo, perfil_usuarios, duracion")
-      .order("fecha", { ascending: false });
+      .order("created_at", { ascending: false });
     if (error) setError("Error al cargar los planes de prueba");
     else setPlanes(data || []);
     setLoading(false);
@@ -145,14 +145,16 @@ const PlanesPruebaList: React.FC = () => {
                     <td className="p-4 text-center font-mono bg-gray-50/30">{plan.fecha}</td>
                     <td className="p-4 text-center hidden lg:table-cell">{plan.duracion}</td>
                     <td className="p-4 text-center whitespace-nowrap">
-                      {/* Botón Ver Detalles (Ícono de ojo) */}
+                      {/* Botón Gestionar Tareas con tooltip */}
                       <button
                         onClick={() => navigate(`/planes-prueba/${plan.id}`)}
-                        title="Ver detalles del plan"
-                        aria-label={`Ver detalles del plan ${plan.producto}`}
-                        className="mr-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors inline-flex items-center justify-center"
+                        title="Haz clic para ver y agregar tareas a este plan"
+                        aria-label={`Gestionar tareas del plan ${plan.producto}`}
+                        className="mr-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors inline-flex items-center justify-center font-semibold"
+                        style={{ flexDirection: 'column', lineHeight: '1.1' }}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        
+                        + Tareas
                       </button>
                       <button
                         onClick={() => navigate(`editar/${plan.id}`)}

@@ -163,7 +163,7 @@ export default function PlanPruebaPage() {
       if (error) {
         setFeedback("Error al guardar: " + error.message);
       } else {
-        navigate("/planes-prueba", { state: { feedback: editMode ? "¡Plan actualizado correctamente!" : "¡Plan guardado correctamente!" } });
+        navigate("/planes-prueba", { state: { feedback: editMode ? "¡Plan actualizado correctamente!" : "¡Plan guardado correctamente, Ya puedes agregar tareas a este plan!" } });
       }
     } catch (err) {
       setFeedback("Error inesperado al guardar.");
@@ -232,9 +232,9 @@ export default function PlanPruebaPage() {
             min={new Date().toISOString().split('T')[0]} required
           />
           <AccessibleInput
-            id="lugar" name="lugar" label="Lugar / Canal:"
+            id="lugar" name="lugar" label="Lugar o Canal:"
             value={form.lugar} onChange={handleChange} error={errors.lugar}
-            placeholder="Ej: Zoom / Lab 1" required
+            placeholder="Ej: Zoom-Online o Lab 1-Presencial" required
           />
         </div>
 
