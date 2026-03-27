@@ -161,7 +161,10 @@ export default function Observaciones() {
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div className="w-full md:w-1/2">
-          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por participante, tarea o severidad..." className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm outline-none" />
+        <label htmlFor="buscador" className="sr-only">
+          Buscar por participante, tarea o severidad
+        </label>
+          <input id="buscador" type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por participante, tarea o severidad..." className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 bg-white shadow-sm outline-none" />
         </div>
         <button onClick={handleOpenModal} className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
           + Nueva Observación
