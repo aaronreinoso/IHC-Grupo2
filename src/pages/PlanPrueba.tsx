@@ -89,7 +89,7 @@ export default function PlanPruebaPage() {
       const today = new Date();
       today.setHours(0,0,0,0);
       const inputDate = new Date(values.fecha);
-      if (inputDate < today) {
+      if (inputDate < today && !editMode) {
         newErrors.fecha = "La fecha no puede ser anterior a hoy.";
       }
     }

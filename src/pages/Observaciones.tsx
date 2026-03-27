@@ -6,6 +6,7 @@ import { AccessibleTextarea } from '../components/AccessibleTextarea';
 import { AccessibleSelect } from '../components/AccessibleSelect';
 import Modal from '../components/Modal';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Participante { nombre: string; }
 interface Sesion { id: string; participantes?: Participante | null; }
@@ -46,7 +47,6 @@ export default function Observaciones() {
 
   const [loadingGuardar, setLoadingGuardar] = useState<boolean>(false);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
-  const [feedback, setFeedback] = useState<string>(''); 
 
   useEffect(() => {
     if (planId) {
@@ -54,13 +54,6 @@ export default function Observaciones() {
       fetchObservaciones();
     }
   }, [planId]);
-
-  useEffect(() => {
-    if (feedback && !feedback.includes("Error")) {
-      const timer = setTimeout(() => setFeedback(""), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [feedback]);
 
   const fetchDependencias = async () => {
     if (!planId) return;
@@ -108,10 +101,9 @@ export default function Observaciones() {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    setFeedback("");
     const { error } = await supabase.from('observaciones').delete().eq('id', deleteId);
-    if (error) setFeedback("Error al eliminar: " + error.message);
-    else { setFeedback("Observación eliminada correctamente."); fetchObservaciones(); }
+    if (error) toast.error("Error al eliminar: " + error.message);
+    else { toast.success("Observación eliminada correctamente."); fetchObservaciones(); }
     setDeleteId(null);
   };
 
@@ -140,7 +132,7 @@ export default function Observaciones() {
 
     setLoadingGuardar(false);
     if (error) setMensaje({ tipo: 'error', texto: `Error al ${editingId ? 'actualizar' : 'guardar'}: ` + error.message });
-    else { setFeedback(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`); fetchObservaciones(); handleCloseModal(); }
+    else { toast.success(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`); fetchObservaciones(); handleCloseModal(); }
   };
 
   const filteredObservaciones = useMemo(() => {
@@ -162,15 +154,10 @@ export default function Observaciones() {
 
   return (
     <div className="max-w-6xl mx-auto py-8">
+      <Toaster position="top-right" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Registro de Observaciones</h1>
       </div>
-
-      {feedback && (
-        <div aria-live="polite" className={`p-4 mb-6 rounded-lg text-sm font-semibold text-center shadow-sm ${feedback.includes("Error") ? "bg-red-50 text-red-700 border border-red-200" : "bg-green-50 text-green-700 border border-green-200"}`}>
-          {feedback}
-        </div>
-      )}
 
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div className="w-full md:w-1/2">

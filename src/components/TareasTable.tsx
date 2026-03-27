@@ -15,7 +15,7 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
       <div className="overflow-x-auto">
         <table 
           ref={tableRef}
-          className="w-full text-left border-collapse"
+          className="w-[100%] text-left table-fixed border-collapse"
           aria-label="Lista de tareas registradas"
         >
           <caption id="table-caption" className="sr-only">

@@ -83,11 +83,6 @@ const TareasList: React.FC = () => {
     <div className="max-w-6xl mx-auto py-8">
       {/* Cabecera */}
       <div className="flex items-center mb-6">
-        <Link to="/planes-prueba" className="mr-4 text-gray-500 hover:text-gray-800 transition-colors" aria-label="Volver a la lista de planes de prueba">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </Link>
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Tareas del Test</h1>
       </div>
       

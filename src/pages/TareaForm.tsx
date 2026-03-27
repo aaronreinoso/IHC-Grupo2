@@ -139,7 +139,7 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: "2.5rem auto", padding: 36, background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
+    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-4vh", display: "flex",flexDirection: "column", padding: "2%",height: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
       <h1 style={{ fontSize: "2.3rem", fontWeight: "bold", color: '#1976d2', marginBottom: 18 }}>
         {editMode ? "Editar Tarea" : "Nueva Tarea"}
       </h1>
@@ -206,7 +206,7 @@ const TareaForm: React.FC = () => {
           placeholder="Ej: El usuario completa el flujo en menos de 2 minutos..." 
         />
 
-        <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+        <div style={{ display: 'flex', gap: '4%', marginTop: '2%' }}>
           <button type="button" onClick={() => setShowCancelModal(true)} style={{ fontWeight: "bold", padding: '12px 24px', background: '#e0e0e0', color: '#333', border: 'none', borderRadius: '8px', cursor: 'pointer', flex: 1 }}>
             Cancelar
           </button>

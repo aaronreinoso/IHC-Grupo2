@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'; // <-- IMPORTANTE
 import { supabase } from '../supabaseClient';
 import { AccessibleInput } from '../components/AccessibleInput';
 import toast, { Toaster } from 'react-hot-toast';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 
 export default function Participantes() {
   const { planId } = useParams(); // Obtenemos el ID del plan de la URL
@@ -13,6 +14,10 @@ export default function Participantes() {
   const [nombre, setNombre] = useState('');
   const [perfil, setPerfil] = useState('');
   const [errores, setErrores] = useState<{nombre?: string; perfil?: string}>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteSesion, setDeleteSesion] = useState<string | null>(null);
+  const [deleteName, setDeleteName] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (planId) fetchParticipantesDelPlan();
@@ -88,11 +93,24 @@ export default function Participantes() {
     setLoading(false);
   };
 
+  const eliminarParticipante = async () => {
+      if (!deleteId) return;
+      const [{ error: errorSesion }, { error: errorParticipante }] = await Promise.all([
+        supabase.from('sesiones').delete().eq('id', deleteSesion),
+        supabase.from('participantes').delete().eq('id', deleteId)
+        ]);
+      if (errorSesion || errorParticipante) toast.error('Error al eliminar');
+      else { toast.success('Participante correctamente eliminado'); fetchParticipantesDelPlan(); }
+      setDeleteId(null);
+      setDeleteName(null);
+      setDeleteSesion(null);
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-100 mt-6">
       <Toaster position="top-right" />
       <h1 className="text-3xl font-bold text-gray-800 tracking-tight mb-6">Gestión de Participantes</h1>
-      
+
       <form onSubmit={guardarParticipante} className="bg-gray-50 p-6 rounded-xl border border-gray-200 mb-8">
         <h2 className="text-lg font-semibold mb-4 text-gray-700">Añadir Nuevo Participante al Plan</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,7 +145,12 @@ export default function Participantes() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {participantes.map(p => (
-            <div key={p.sesion_id} className="p-5 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
+            <div key={p.sesion_id} className="relative p-5 border border-gray-200 rounded-xl hover:shadow-md transition-shadow bg-white">
+              <div className="absolute top-1 right-1">
+              <button onClick={() => {setDeleteId(p.id);setDeleteSesion(p.sesion_id);setDeleteName(p.nombre);}} className="w-8 h-8 items-center rounded-full hover:bg-red-50 bg-gray-100 text-gray-500 hover:text-red-600 transition">
+                ✕
+              </button>
+              </div>
               <h3 className="font-bold text-lg text-gray-800">{p.nombre}</h3>
               <span className="inline-block mt-3 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold rounded-full">
                 {p.perfil}
@@ -136,6 +159,7 @@ export default function Participantes() {
           ))}
         </div>
       )}
+      <ConfirmDeleteModal isOpen={!!deleteId} onClose={() => {setDeleteId(null);setDeleteName(null);setDeleteSesion(null);}} onConfirm={eliminarParticipante} itemName={`a ${deleteName}`}/>
     </div>
   );
 }

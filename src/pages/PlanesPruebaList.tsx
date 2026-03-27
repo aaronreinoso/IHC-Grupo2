@@ -79,7 +79,7 @@ const PlanesPruebaList: React.FC = () => {
   });
 
   return (
-    <div className="max-w-6xl mx-auto py-8">
+    <div className="w-[90%] mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Planes de Prueba</h1>
       </div>
@@ -118,9 +118,9 @@ const PlanesPruebaList: React.FC = () => {
       </div>
 
       {/* Tabla con Tailwind */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white  rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="mx-auto border-collapse">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
                 <th className="p-4 font-semibold border-b">Producto</th>
