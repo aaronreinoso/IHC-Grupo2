@@ -120,15 +120,15 @@ const PlanesPruebaList: React.FC = () => {
       {/* Tabla con Tailwind */}
       <div className="bg-white  rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="mx-auto border-collapse">
+          <table className="mx-auto border-collapse table-fixed">
             <thead>
               <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider">
-                <th className="p-4 font-semibold border-b">Producto</th>
-                <th className="p-4 font-semibold border-b">Módulo</th>
-                <th className="p-4 font-semibold border-b hidden md:table-cell">Objetivo</th>
-                <th className="p-4 font-semibold border-b text-center">Fecha</th>
-                <th className="p-4 font-semibold border-b text-center hidden lg:table-cell">Duración</th>
-                <th className="p-4 font-semibold border-b text-center">Acciones</th>
+                <th className="p-4 font-semibold border-b w-[20%]">Producto</th>
+                <th className="p-4 font-semibold border-b w-[10%]">Módulo</th>
+                <th className="p-4 font-semibold border-b hidden md:table-cell w-[20%]">Objetivo</th>
+                <th className="p-4 font-semibold border-b text-center w-[15%]">Fecha</th>
+                <th className="p-4 font-semibold border-b text-center hidden lg:table-cell w-[10%]">Duración</th>
+                <th className="p-4 font-semibold border-b text-center w-[25%]">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700 text-sm">

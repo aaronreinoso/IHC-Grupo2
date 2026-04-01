@@ -66,6 +66,7 @@ const TareasList: React.FC = () => {
       setFeedback("Error al eliminar: " + error.message);
     } else {
       setFeedback("Tarea eliminada correctamente.");
+      window.dispatchEvent(new Event('plan-refresh'));
       fetchTareas();
     }
     setDeleteId(null);
