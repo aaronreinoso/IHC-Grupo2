@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import type { Tarea } from "../types/tarea";
 
 interface TareasTableProps {
@@ -6,6 +6,38 @@ interface TareasTableProps {
   onEdit: (id: string, name: string) => void;
   onDelete: (id: string, name: string) => void;
 }
+
+// Subcomponente reutilizable para manejar la expansión de texto
+const ExpandableText: React.FC<{ text: string; charLimit?: number; clampClass?: string }> = ({ 
+  text, 
+  charLimit = 60, 
+  clampClass = "line-clamp-2" 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  // Evaluamos si el texto excede nuestro límite para mostrar el botón
+  const shouldTruncate = text && text.length > charLimit;
+
+  return (
+    <div className="flex flex-col items-start w-full">
+      <div 
+        className={`${!isExpanded && shouldTruncate ? clampClass : ""} text-gray-800 break-words w-full font-medium`}
+        title={!isExpanded ? text : undefined}
+      >
+        {text}
+      </div>
+      {shouldTruncate && (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-1 text-xs font-bold text-blue-600 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-300 rounded px-1 -ml-1 transition-colors"
+          aria-expanded={isExpanded}
+        >
+          {isExpanded ? "Ver menos" : "Ver más"}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) => {
   const tableRef = useRef<HTMLTableElement>(null);
@@ -17,9 +49,7 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
       aria-labelledby="table-caption" 
       tabIndex={0}
     >
-      {/* Contenedor responsivo para scroll horizontal en móviles */}
       <div className="overflow-x-auto">
-        {/* Usamos min-w-[900px] para evitar que las columnas se aplasten en pantallas pequeñas */}
         <table 
           ref={tableRef}
           className="w-full min-w-[900px] text-left table-fixed border-collapse"
@@ -52,44 +82,38 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
                   className="hover:bg-blue-50/60 focus-within:bg-blue-50/60 transition-colors" 
                   aria-rowindex={tareas.indexOf(tarea) + 1}
                 >
-                  {/* Se agregó align-top para que el texto siempre inicie arriba si otra celda es más grande */}
                   <td className="p-4 align-top">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 break-words w-full">
                       {Array.isArray(tarea.pruebas_usabilidad) 
                         ? tarea.pruebas_usabilidad[0]?.producto 
                         : tarea.pruebas_usabilidad?.producto || "Sin asignar"}
                     </span>
                   </td>
+                  
+                  {/* Ajustados a máximo 2 líneas (line-clamp-2) y límites de caracteres reducidos */}
                   <td className="p-4 align-top">
-                    {/* line-clamp-3 limita a 3 líneas. El atributo title permite ver todo al pasar el mouse */}
-                    <div className="line-clamp-3 text-gray-900 font-medium" title={tarea.escenario}>
-                      {tarea.escenario}
-                    </div>
+                    <ExpandableText text={tarea.escenario} charLimit={60} clampClass="line-clamp-2" />
                   </td>
+                  
                   <td className="p-4 align-top">
-                    <div className="line-clamp-3 text-gray-700" title={tarea.resultado_esperado}>
-                      {tarea.resultado_esperado}
-                    </div>
+                    <ExpandableText text={tarea.resultado_esperado} charLimit={60} clampClass="line-clamp-2" />
                   </td>
+                  
                   <td className="p-4 align-top">
-                    <div className="line-clamp-2 text-gray-600" title={tarea.metrica_principal}>
-                      {tarea.metrica_principal}
-                    </div>
+                    <ExpandableText text={tarea.metrica_principal} charLimit={40} clampClass="line-clamp-2" />
                   </td>
+                  
                   <td className="p-4 align-top">
-                    <div className="line-clamp-2 text-gray-600" title={tarea.criterio_exito}>
-                      {tarea.criterio_exito}
-                    </div>
+                    <ExpandableText text={tarea.criterio_exito} charLimit={40} clampClass="line-clamp-2" />
                   </td>
+                  
                   <td className="p-4 align-top text-center">
-                    {/* Botones apilados con nuevos colores y anillos de foco para accesibilidad */}
                     <div className="flex flex-col gap-2 items-center justify-center">
                       <button
                         onClick={() => onEdit(tarea.id, tarea.escenario)}
                         className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all flex justify-center items-center gap-1"
                         aria-label={`Editar tarea: ${tarea.escenario.substring(0, 20)}...`}
                       >
-                        {/* Ícono de lápiz para accesibilidad visual */}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         Editar
                       </button>
@@ -98,7 +122,6 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
                         className="w-full px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm focus:outline-none focus:ring-4 focus:ring-rose-300 transition-all flex justify-center items-center gap-1"
                         aria-label={`Eliminar tarea: ${tarea.escenario.substring(0, 20)}...`}
                       >
-                        {/* Ícono de basura */}
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         Eliminar
                       </button>

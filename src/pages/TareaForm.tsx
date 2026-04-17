@@ -14,7 +14,6 @@ const initialState: Omit<TareaFormState, 'prueba_id'> = {
   criterio_exito: "",
 };
 
-// LÍMITES AJUSTADOS: KPIs a 50 y Criterios a 100
 const LIMITS = {
   escenario: { min: 20, max: 150 },
   resultado_esperado: { min: 20, max: 150 },
