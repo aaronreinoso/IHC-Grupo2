@@ -131,7 +131,6 @@ export default function PlanPruebaPage() {
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Accesibilidad: Mover el foco al primer error
       const firstErrorField = Object.keys(validationErrors)[0];
       const element = document.getElementById(firstErrorField);
       if (element) element.focus();
@@ -154,16 +153,34 @@ export default function PlanPruebaPage() {
 
     try {
       let error;
+      let newPlanId = id;
+
       if (editMode && id) {
         ({ error } = await supabase.from("pruebas_usabilidad").update(safeForm).eq("id", id));
       } else {
-        ({ error } = await supabase.from("pruebas_usabilidad").insert([safeForm]));
+        const { data, error: insertError } = await supabase
+          .from("pruebas_usabilidad")
+          .insert([safeForm])
+          .select()
+          .single();
+        
+        error = insertError;
+        if (data) {
+          newPlanId = data.id;
+        }
       }
 
       if (error) {
         setFeedback("Error al guardar: " + error.message);
       } else {
-        navigate("/planes-prueba", { state: { feedback: editMode ? "¡Plan actualizado correctamente!" : "¡Plan guardado correctamente, Ya puedes agregar tareas a este plan!" } });
+        if (editMode) {
+          navigate("/planes-prueba", { state: { feedback: "¡Plan actualizado correctamente!" } });
+        } else {
+          // Ahora te envía directamente a la lista de tareas del plan
+          navigate(`/planes-prueba/${newPlanId}/tareas`, { 
+            state: { feedback: "¡Plan guardado correctamente! Ya puedes gestionar las tareas de este plan." } 
+          });
+        }
       }
     } catch (err) {
       setFeedback("Error inesperado al guardar.");
@@ -238,7 +255,6 @@ export default function PlanPruebaPage() {
           />
         </div>
 
-        {/* Input especial para duración adaptado a Tailwind */}
         <div className="flex flex-col mb-4">
           <label className="mb-1 text-sm font-semibold text-gray-800">
             Duración estimada (hh:mm:ss):
