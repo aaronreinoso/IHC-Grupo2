@@ -14,6 +14,14 @@ const initialState: Omit<TareaFormState, 'prueba_id'> = {
   criterio_exito: "",
 };
 
+// LÍMITES AJUSTADOS: KPIs a 50 y Criterios a 100
+const LIMITS = {
+  escenario: { min: 20, max: 150 },
+  resultado_esperado: { min: 20, max: 150 },
+  metrica_principal: { min: 10, max: 50 },
+  criterio_exito: { min: 20, max: 100 },
+};
+
 const TareaForm: React.FC = () => {
   const { planId, tareaId } = useParams();
   const navigate = useNavigate();
@@ -35,7 +43,7 @@ const TareaForm: React.FC = () => {
           .select("duracion, producto")
           .eq("id", planId)
           .single();
-        setProducto(data?.producto);  
+        setProducto(data?.producto || "");  
         if (data && data.duracion) {
            const [h, m, s] = data.duracion.split(':').map(Number);
            setLimiteMinutosPlan((h || 0) * 60 + (m || 0) + ((s || 0) / 60));
@@ -73,8 +81,19 @@ const TareaForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: undefined }));
+    
+    let finalValue = value;
+    const limit = LIMITS[name as keyof typeof LIMITS];
+    
+    if (limit && value.length > limit.max) {
+      finalValue = value.slice(0, limit.max);
+    }
+
+    setForm((prev) => ({ ...prev, [name]: finalValue }));
+
+    if (limit && finalValue.length >= limit.min && errors[name as keyof TareaFormState]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,22 +152,37 @@ const TareaForm: React.FC = () => {
       }
     } catch (err) {
       setFeedback("Error inesperado al guardar.");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const renderCounter = (field: keyof typeof LIMITS, customMessage: string) => {
+    const length = form[field].length;
+    const { min, max } = LIMITS[field];
+    const isUnderMin = length > 0 && length < min;
+    const isAtMax = length >= max;
+
+    return (
+      <div className="flex justify-between text-xs mt-1 ml-1 px-1" aria-hidden="true">
+        <span className={`${isUnderMin ? "text-red-600 font-medium" : "text-gray-500"}`}>
+          {customMessage} (Mín. {min})
+        </span>
+        <span className={`${isAtMax ? "text-red-600 font-bold" : "text-gray-500 font-medium"}`}>
+          {length}/{max}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto my-6 p-4 sm:p-8 bg-gray-50 rounded-2xl shadow-lg border border-blue-100">
       
-      {/* Cabecera Responsiva */}
       <header className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-blue-700 tracking-tight mb-4">
           {editMode ? "Editar Tarea" : "Nueva Tarea"}
         </h1>
 
-        {/* Recordatorio de Contexto (Lógica de tu compañero, estilos tuyos) */}
         {producto && (
           <div 
             className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 shadow-sm flex items-center gap-2"
@@ -160,7 +194,6 @@ const TareaForm: React.FC = () => {
         )}
       </header>
       
-      {/* Sistema de Feedback Accesible */}
       {feedback && (
         <div 
           role="status" 
@@ -175,10 +208,8 @@ const TareaForm: React.FC = () => {
         </div>
       )}
 
-      {/* Formulario con Agrupación Gestalt */}
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
         
-        {/* BLOQUE 1: Contexto de la Tarea */}
         <section className="bg-white p-5 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">
             1. Contexto de la Tarea
@@ -192,14 +223,11 @@ const TareaForm: React.FC = () => {
                 value={form.escenario} 
                 onChange={handleChange} 
                 error={errors.escenario} 
-                minLength={20} 
-                maxLength={500} 
+                maxLength={LIMITS.escenario.max} 
                 required 
                 placeholder="Ej: El usuario debe encontrar el producto X..." 
               />
-              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
-                Mínimo 20 caracteres. ({form.escenario.length}/500)
-              </p>
+              {renderCounter("escenario", "Describe la situación.")}
             </div>
             
             <div>
@@ -210,19 +238,15 @@ const TareaForm: React.FC = () => {
                 value={form.resultado_esperado} 
                 onChange={handleChange} 
                 error={errors.resultado_esperado} 
-                minLength={20} 
-                maxLength={500} 
+                maxLength={LIMITS.resultado_esperado.max} 
                 required 
                 placeholder="Ej: El producto aparece en el carrito..." 
               />
-              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
-                Mínimo 20 caracteres para explicar claramente qué debe suceder.
-              </p>
+              {renderCounter("resultado_esperado", "Explica qué debe suceder.")}
             </div>
           </div>
         </section>
 
-        {/* BLOQUE 2: Definición de Éxito */}
         <section className="bg-white p-5 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
           <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">
             2. Definición de Éxito
@@ -236,14 +260,11 @@ const TareaForm: React.FC = () => {
                 value={form.metrica_principal} 
                 onChange={handleChange} 
                 error={errors.metrica_principal} 
-                minLength={10} 
-                maxLength={250} 
+                maxLength={LIMITS.metrica_principal.max} 
                 required 
-                placeholder="Ej: Tiempo de consecución de la tarea..." 
+                placeholder="Ej: Tiempo de tarea..." 
               />
-              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
-                ¿Qué vas a medir en esta tarea?
-              </p>
+              {renderCounter("metrica_principal", "¿Qué vas a medir?")}
             </div>
             
             <div>
@@ -254,19 +275,15 @@ const TareaForm: React.FC = () => {
                 value={form.criterio_exito} 
                 onChange={handleChange} 
                 error={errors.criterio_exito} 
-                minLength={20} 
-                maxLength={300} 
+                maxLength={LIMITS.criterio_exito.max} 
                 required 
-                placeholder="Ej: El usuario completa el flujo en menos de 2 minutos..." 
+                placeholder="Ej: El flujo se completa en < 2 min..." 
               />
-              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
-                Define la condición exacta para que la tarea sea exitosa.
-              </p>
+              {renderCounter("criterio_exito", "Condición exacta para el éxito.")}
             </div>
           </div>
         </section>
 
-        {/* Botones de Acción (Responsivos: Columna en móvil, fila en PC) */}
         <div className="flex flex-col-reverse sm:flex-row gap-4 pt-4">
           <button 
             type="button" 
