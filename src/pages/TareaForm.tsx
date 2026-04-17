@@ -15,7 +15,6 @@ const initialState: Omit<TareaFormState, 'prueba_id'> = {
 };
 
 const TareaForm: React.FC = () => {
-  // Leemos planId y tareaId de la ruta
   const { planId, tareaId } = useParams();
   const navigate = useNavigate();
   
@@ -129,7 +128,7 @@ const TareaForm: React.FC = () => {
         setFeedback("Error al guardar: " + error.message);
       } else {
         navigate(`/planes-prueba/${planId}/tareas`, { 
-          state: { feedback: editMode ? "¡Tarea actualizada correctamente!" : "¡Tarea guardada correctamente, !" } 
+          state: { feedback: editMode ? "¡Tarea actualizada correctamente!" : "¡Tarea guardada correctamente!" } 
         });
       }
     } catch (err) {
@@ -141,96 +140,146 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-4vh", display: "flex",flexDirection: "column", padding: "2%",minHeight: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
-      <h1 style={{ fontSize: "2rem", fontWeight: "bold", color: '#1976d2', marginBottom: 10 }}>
-        {editMode ? "Editar Tarea" : "Nueva Tarea"}
-      </h1>
-
-      <div
-        style={{
-          marginBottom: 10,
-          padding: "14px 18px",
-          background: "#EAF3FF",
-          border: "1px solid #8FB7E8",
-          borderRadius: 12,
-          color: "#0F3D75",
-          fontSize: "1rem",
-          fontWeight: 700,
-          lineHeight: 1.5,
-          boxShadow: "0 1px 2px rgba(15, 61, 117, 0.08)",
-        }}
-        aria-label="Información del producto"
-      >
-        Producto: <span style={{ fontWeight: 600, color: "#0A2E57" }}>{producto}</span>
-      </div>
+    <div className="w-full max-w-4xl mx-auto my-6 p-4 sm:p-8 bg-gray-50 rounded-2xl shadow-lg border border-blue-100">
       
+      {/* Cabecera Responsiva */}
+      <header className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-blue-700 tracking-tight mb-4">
+          {editMode ? "Editar Tarea" : "Nueva Tarea"}
+        </h1>
+
+        {/* Recordatorio de Contexto (Lógica de tu compañero, estilos tuyos) */}
+        {producto && (
+          <div 
+            className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 shadow-sm flex items-center gap-2"
+            aria-label="Información del producto"
+          >
+            <span className="font-medium">Producto a evaluar:</span> 
+            <span className="font-bold text-blue-800">{producto}</span>
+          </div>
+        )}
+      </header>
+      
+      {/* Sistema de Feedback Accesible */}
       {feedback && (
-        <div role="status" aria-live="polite" style={{ color: feedback.startsWith("Error") ? "#d32f2f" : "#388e3c", fontWeight: "bold", marginBottom: 18, fontSize: 18, borderRadius: 8, background: feedback.startsWith("Error") ? "#ffebee" : "#e8f5e9", padding: 12, border: `1px solid ${feedback.startsWith("Error") ? "#ffcdd2" : "#c8e6c9"}` }}>
+        <div 
+          role="status" 
+          aria-live="polite" 
+          className={`p-4 mb-6 rounded-xl text-base font-semibold shadow-sm ${
+            feedback.startsWith("Error") 
+              ? "bg-red-50 text-red-700 border border-red-200" 
+              : "bg-green-50 text-green-700 border border-green-200"
+          }`}
+        >
           {feedback}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Formulario con Agrupación Gestalt */}
+      <form onSubmit={handleSubmit} noValidate className="space-y-8">
         
-        
-        
-        <AccessibleTextarea 
-          id="escenario" 
-          name="escenario" 
-          label="Escenario *" 
-          value={form.escenario} 
-          onChange={handleChange} 
-          error={errors.escenario} 
-          minLength={20} 
-          maxLength={500} 
-          required 
-          placeholder="Ej: El usuario debe encontrar el producto X..." 
-        />
-        
-        <AccessibleTextarea 
-          id="resultado_esperado" 
-          name="resultado_esperado" 
-          label="Resultado Esperado *" 
-          value={form.resultado_esperado} 
-          onChange={handleChange} 
-          error={errors.resultado_esperado} 
-          minLength={20} 
-          maxLength={500} 
-          required 
-          placeholder="Ej: El producto aparece en el carrito..." 
-        />
-        
-        <AccessibleInput 
-          id="metrica_principal" 
-          name="metrica_principal" 
-          label="Métrica Principal (KPIs) *" 
-          value={form.metrica_principal} 
-          onChange={handleChange} 
-          error={errors.metrica_principal} 
-          minLength={10} 
-          maxLength={250} 
-          required 
-          placeholder="Ej: Tiempo de consecución de la tarea..." 
-        />
-        
-        <AccessibleTextarea 
-          id="criterio_exito" 
-          name="criterio_exito" 
-          label="Criterio de Éxito *" 
-          value={form.criterio_exito} 
-          onChange={handleChange} 
-          error={errors.criterio_exito} 
-          minLength={20} 
-          maxLength={300} 
-          required 
-          placeholder="Ej: El usuario completa el flujo en menos de 2 minutos..." 
-        />
+        {/* BLOQUE 1: Contexto de la Tarea */}
+        <section className="bg-white p-5 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">
+            1. Contexto de la Tarea
+          </h2>
+          <div className="space-y-5">
+            <div>
+              <AccessibleTextarea 
+                id="escenario" 
+                name="escenario" 
+                label="Escenario *" 
+                value={form.escenario} 
+                onChange={handleChange} 
+                error={errors.escenario} 
+                minLength={20} 
+                maxLength={500} 
+                required 
+                placeholder="Ej: El usuario debe encontrar el producto X..." 
+              />
+              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
+                Mínimo 20 caracteres. ({form.escenario.length}/500)
+              </p>
+            </div>
+            
+            <div>
+              <AccessibleTextarea 
+                id="resultado_esperado" 
+                name="resultado_esperado" 
+                label="Resultado Esperado *" 
+                value={form.resultado_esperado} 
+                onChange={handleChange} 
+                error={errors.resultado_esperado} 
+                minLength={20} 
+                maxLength={500} 
+                required 
+                placeholder="Ej: El producto aparece en el carrito..." 
+              />
+              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
+                Mínimo 20 caracteres para explicar claramente qué debe suceder.
+              </p>
+            </div>
+          </div>
+        </section>
 
-        <div style={{ display: 'flex', gap: '2%' }}>
-          <button type="button" onClick={() => setShowCancelModal(true)} style={{ fontWeight: "bold", padding: '12px 24px', background: '#e0e0e0', color: '#333', border: 'none', borderRadius: '8px', cursor: 'pointer', flex: 1 }}>
+        {/* BLOQUE 2: Definición de Éxito */}
+        <section className="bg-white p-5 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b border-gray-100">
+            2. Definición de Éxito
+          </h2>
+          <div className="space-y-5">
+            <div>
+              <AccessibleInput 
+                id="metrica_principal" 
+                name="metrica_principal" 
+                label="Métrica Principal (KPIs) *" 
+                value={form.metrica_principal} 
+                onChange={handleChange} 
+                error={errors.metrica_principal} 
+                minLength={10} 
+                maxLength={250} 
+                required 
+                placeholder="Ej: Tiempo de consecución de la tarea..." 
+              />
+              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
+                ¿Qué vas a medir en esta tarea?
+              </p>
+            </div>
+            
+            <div>
+              <AccessibleTextarea 
+                id="criterio_exito" 
+                name="criterio_exito" 
+                label="Criterio de Éxito *" 
+                value={form.criterio_exito} 
+                onChange={handleChange} 
+                error={errors.criterio_exito} 
+                minLength={20} 
+                maxLength={300} 
+                required 
+                placeholder="Ej: El usuario completa el flujo en menos de 2 minutos..." 
+              />
+              <p className="text-xs text-gray-500 mt-1 ml-1" aria-hidden="true">
+                Define la condición exacta para que la tarea sea exitosa.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Botones de Acción (Responsivos: Columna en móvil, fila en PC) */}
+        <div className="flex flex-col-reverse sm:flex-row gap-4 pt-4">
+          <button 
+            type="button" 
+            onClick={() => setShowCancelModal(true)} 
+            className="w-full sm:w-1/3 py-3 px-4 font-bold text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors"
+          >
             Cancelar
           </button>
-          <button type="submit" disabled={loading} style={{ fontWeight: "bold", padding: '12px 24px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', flex: 1 }}>
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full sm:w-2/3 py-3 px-4 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-colors disabled:bg-blue-400"
+          >
             {loading ? "Guardando..." : "Guardar Tarea"}
           </button>
         </div>
