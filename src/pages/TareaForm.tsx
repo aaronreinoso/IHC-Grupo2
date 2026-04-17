@@ -26,15 +26,17 @@ const TareaForm: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [limiteMinutosPlan, setLimiteMinutosPlan] = useState<number | null>(null);
+  const [producto, setProducto] = useState<String>("");
 
   useEffect(() => {
     if (planId) {
       (async () => {
         const { data } = await supabase
           .from("pruebas_usabilidad")
-          .select("duracion")
+          .select("duracion, producto")
           .eq("id", planId)
           .single();
+        setProducto(data?.producto);  
         if (data && data.duracion) {
            const [h, m, s] = data.duracion.split(':').map(Number);
            setLimiteMinutosPlan((h || 0) * 60 + (m || 0) + ((s || 0) / 60));
@@ -139,10 +141,28 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-4vh", display: "flex",flexDirection: "column", padding: "2%",height: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
+    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-5vh", display: "flex",flexDirection: "column", padding: "2%",minHeight: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
       <h1 style={{ fontSize: "2.3rem", fontWeight: "bold", color: '#1976d2', marginBottom: 18 }}>
         {editMode ? "Editar Tarea" : "Nueva Tarea"}
       </h1>
+
+      <div
+        style={{
+          marginBottom: 18,
+          padding: "14px 18px",
+          background: "#EAF3FF",
+          border: "1px solid #8FB7E8",
+          borderRadius: 12,
+          color: "#0F3D75",
+          fontSize: "1rem",
+          fontWeight: 700,
+          lineHeight: 1.5,
+          boxShadow: "0 1px 2px rgba(15, 61, 117, 0.08)",
+        }}
+        aria-label="Información del producto"
+      >
+        Producto: <span style={{ fontWeight: 600, color: "#0A2E57" }}>{producto}</span>
+      </div>
       
       {feedback && (
         <div role="status" aria-live="polite" style={{ color: feedback.startsWith("Error") ? "#d32f2f" : "#388e3c", fontWeight: "bold", marginBottom: 18, fontSize: 18, borderRadius: 8, background: feedback.startsWith("Error") ? "#ffebee" : "#e8f5e9", padding: 12, border: `1px solid ${feedback.startsWith("Error") ? "#ffcdd2" : "#c8e6c9"}` }}>
@@ -206,7 +226,7 @@ const TareaForm: React.FC = () => {
           placeholder="Ej: El usuario completa el flujo en menos de 2 minutos..." 
         />
 
-        <div style={{ display: 'flex', gap: '4%', marginTop: '2%' }}>
+        <div style={{ display: 'flex', gap: '2%' }}>
           <button type="button" onClick={() => setShowCancelModal(true)} style={{ fontWeight: "bold", padding: '12px 24px', background: '#e0e0e0', color: '#333', border: 'none', borderRadius: '8px', cursor: 'pointer', flex: 1 }}>
             Cancelar
           </button>

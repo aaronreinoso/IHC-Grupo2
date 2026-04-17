@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Layouts
 import Layout from './components/Layout';
@@ -19,7 +19,7 @@ import Dashboard from './pages/Dashboard';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/IHC-Grupo2">
+    <HashRouter>
       <Routes>
         
         {/* ==========================================
@@ -60,6 +60,6 @@ export default function App() {
         </Route>
 
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
