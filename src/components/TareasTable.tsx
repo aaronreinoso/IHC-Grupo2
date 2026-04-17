@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import type { Tarea } from "../types/tarea";
 
 interface TareasTableProps {
@@ -14,7 +14,6 @@ const ExpandableText: React.FC<{ text: string; charLimit?: number; clampClass?: 
   clampClass = "line-clamp-2" 
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  // Evaluamos si el texto excede nuestro límite para mostrar el botón
   const shouldTruncate = text && text.length > charLimit;
 
   return (
@@ -41,15 +40,33 @@ const ExpandableText: React.FC<{ text: string; charLimit?: number; clampClass?: 
 
 const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) => {
   const tableRef = useRef<HTMLTableElement>(null);
+  
+  // --- ESTADOS DE PAGINACIÓN ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Si la lista de tareas cambia (ej. al buscar o eliminar), volvemos a la página 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tareas]);
+
+  // Cálculos de paginación
+  const totalPages = Math.ceil(tareas.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentTareas = tareas.slice(indexOfFirstItem, indexOfLastItem);
+
+  const displayStart = tareas.length === 0 ? 0 : indexOfFirstItem + 1;
+  const displayEnd = Math.min(indexOfLastItem, tareas.length);
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden" 
+      className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden flex flex-col" 
       role="region" 
       aria-labelledby="table-caption" 
       tabIndex={0}
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto flex-grow">
         <table 
           ref={tableRef}
           className="w-full min-w-[900px] text-left table-fixed border-collapse"
@@ -76,7 +93,8 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
                 </td>
               </tr>
             ) : (
-              tareas.map(tarea => (
+              // Iteramos sobre `currentTareas` en lugar de `tareas`
+              currentTareas.map(tarea => (
                 <tr 
                   key={tarea.id} 
                   className="hover:bg-blue-50/60 focus-within:bg-blue-50/60 transition-colors" 
@@ -90,7 +108,6 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
                     </span>
                   </td>
                   
-                  {/* Ajustados a máximo 2 líneas (line-clamp-2) y límites de caracteres reducidos */}
                   <td className="p-4 align-top">
                     <ExpandableText text={tarea.escenario} charLimit={60} clampClass="line-clamp-2" />
                   </td>
@@ -133,6 +150,76 @@ const TareasTable: React.FC<TareasTableProps> = ({ tareas, onEdit, onDelete }) =
           </tbody>
         </table>
       </div>
+
+      {/* --- CONTROLES DE PAGINACIÓN --- */}
+      {tareas.length > 0 && (
+        <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3 sm:px-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                <span className="font-bold">{displayStart}</span> al <span className="font-bold">{displayEnd}</span> de <span className="font-bold">{tareas.length}</span>
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Anterior</span>
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {/* Generación dinámica de botones de página */}
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentPage(i + 1)}
+                    aria-current={currentPage === i + 1 ? "page" : undefined}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                      currentPage === i + 1
+                        ? "z-10 bg-blue-600 text-white focus-visible:outline-blue-600"
+                        : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="sr-only">Siguiente</span>
+                  <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
