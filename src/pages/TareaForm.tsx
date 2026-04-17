@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 import { AccessibleInput } from "../components/AccessibleInput";
 import { AccessibleTextarea } from "../components/AccessibleTextarea";
 import ConfirmCancelModal from "../components/ConfirmCancelModal";
+import Toast from "../components/Toast"; // <-- NUEVO
 import { validateTarea } from "../utils/tareaValidation";
 import type { TareaFormState } from "../utils/tareaValidation";
 
@@ -175,7 +176,7 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-6 p-4 sm:p-8 bg-gray-50 rounded-2xl shadow-lg border border-blue-100">
+    <div className="w-full max-w-4xl mx-auto my-6 p-4 sm:p-8 bg-gray-50 rounded-2xl shadow-lg border border-blue-100 relative">
       
       <header className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-blue-700 tracking-tight mb-4">
@@ -192,20 +193,6 @@ const TareaForm: React.FC = () => {
           </div>
         )}
       </header>
-      
-      {feedback && (
-        <div 
-          role="status" 
-          aria-live="polite" 
-          className={`p-4 mb-6 rounded-xl text-base font-semibold shadow-sm ${
-            feedback.startsWith("Error") 
-              ? "bg-red-50 text-red-700 border border-red-200" 
-              : "bg-green-50 text-green-700 border border-green-200"
-          }`}
-        >
-          {feedback}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-8">
         
@@ -301,6 +288,9 @@ const TareaForm: React.FC = () => {
         </div>
       </form>
       
+      {/* Toast Render */}
+      <Toast message={feedback} onClose={() => setFeedback("")} />
+
       <ConfirmCancelModal isOpen={showCancelModal} onClose={() => setShowCancelModal(false)} onConfirm={() => navigate(`/planes-prueba/${planId}/tareas`)} />
     </div>
   );
