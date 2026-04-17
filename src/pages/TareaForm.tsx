@@ -141,14 +141,14 @@ const TareaForm: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-5vh", display: "flex",flexDirection: "column", padding: "2%",minHeight: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
-      <h1 style={{ fontSize: "2.3rem", fontWeight: "bold", color: '#1976d2', marginBottom: 18 }}>
+    <div style={{ maxWidth: "85vh", marginLeft: "40vh", marginTop: "-4vh", display: "flex",flexDirection: "column", padding: "2%",minHeight: "100vh", background: "#f9fafb", borderRadius: 18, boxShadow: "0 6px 32px #0002", border: '1px solid #e3eafc' }}>
+      <h1 style={{ fontSize: "2rem", fontWeight: "bold", color: '#1976d2', marginBottom: 10 }}>
         {editMode ? "Editar Tarea" : "Nueva Tarea"}
       </h1>
 
       <div
         style={{
-          marginBottom: 18,
+          marginBottom: 10,
           padding: "14px 18px",
           background: "#EAF3FF",
           border: "1px solid #8FB7E8",
@@ -170,7 +170,7 @@ const TareaForm: React.FC = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         
         
         
