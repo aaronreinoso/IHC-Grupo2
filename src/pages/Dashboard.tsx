@@ -4,9 +4,8 @@ import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [showHelp, setShowHelp] = useState(false);
   
-  // Estados para las métricas generales
+  // Métricas generales extraídas de los conteos de las tablas
   const [metricas, setMetricas] = useState({
     planes: 0,
     participantes: 0,
@@ -14,13 +13,13 @@ export default function Dashboard() {
     hallazgos: 0,
   });
 
-  // Estados para métricas de usabilidad (Cálculos de las observaciones)
+  // Métricas calculadas sobre la tabla de observaciones
   const [usabilidad, setUsabilidad] = useState({
     tasaExito: 0,
     totalErrores: 0,
+    saludSistema: 100, // Indicador de calidad global
   });
 
-  // Estado para gráficos de hallazgos
   const [severidad, setSeveridad] = useState({ alta: 0, media: 0, baja: 0 });
   const [planesRecientes, setPlanesRecientes] = useState<any[]>([]);
 
@@ -32,7 +31,7 @@ export default function Dashboard() {
     setLoading(true);
 
     try {
-      // 1. Obtener conteos generales
+      // 1. Obtener conteos generales de las tablas principales
       const { count: countPlanes } = await supabase.from('pruebas_usabilidad').select('*', { count: 'exact', head: true });
       const { count: countParticipantes } = await supabase.from('participantes').select('*', { count: 'exact', head: true });
       const { count: countTareas } = await supabase.from('tareas').select('*', { count: 'exact', head: true });
@@ -45,20 +44,30 @@ export default function Dashboard() {
         hallazgos: countHallazgos || 0,
       });
 
-      // 2. Calcular métricas de observaciones (Éxito y Errores)
+      // 2. Cálculo de métricas de éxito y errores desde observaciones
       const { data: observaciones } = await supabase.from('observaciones').select('exito, errores');
       
+      let tasa = 0;
+      let salud = 100;
+      let erroresTotales = 0;
+
       if (observaciones && observaciones.length > 0) {
         const exitosas = observaciones.filter(obs => obs.exito).length;
-        const totalErrores = observaciones.reduce((acc, obs) => acc + (obs.errores || 0), 0);
+        erroresTotales = observaciones.reduce((acc, obs) => acc + (obs.errores || 0), 0);
+        tasa = Math.round((exitosas / observaciones.length) * 100);
         
-        setUsabilidad({
-          tasaExito: Math.round((exitosas / observaciones.length) * 100),
-          totalErrores: totalErrores
-        });
+        // La salud del sistema representa la calidad de la experiencia. 
+        // Se basa en el total de errores registrados: 100 - (Errores * 2)
+        salud = Math.max(0, 100 - (erroresTotales * 2)); 
       }
 
-      // 3. Obtener severidad de los hallazgos
+      setUsabilidad({
+        tasaExito: tasa,
+        totalErrores: erroresTotales,
+        saludSistema: salud
+      });
+
+      // 3. Distribución de severidad de hallazgos
       const { data: hallazgosData } = await supabase.from('hallazgos').select('severidad');
       if (hallazgosData) {
         setSeveridad({
@@ -68,12 +77,12 @@ export default function Dashboard() {
         });
       }
 
-      // 4. Últimos planes de prueba para la tabla de actividad
+      // 4. Obtener actividad reciente (limitado para reducir carga visual)
       const { data: recientes } = await supabase
         .from('pruebas_usabilidad')
         .select('id, producto, objetivo, fecha')
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(3);
         
       if (recientes) setPlanesRecientes(recientes);
 
@@ -87,174 +96,146 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">
-      {/* Botón flotante de ayuda */}
-      <button
-        aria-label="Mostrar ayuda del Dashboard"
-        className="fixed top-6 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
-        onClick={() => setShowHelp((prev) => !prev)}
-        type="button"
-      >
-        <span className="text-2xl font-bold">?</span>
-      </button>
-
-      {/* Mensaje de ayuda (divulgación progresiva) */}
-      {showHelp && (
-        <div className="fixed top-20 right-8 z-50 bg-white border border-blue-200 rounded-lg shadow-lg p-4 max-w-xs animate-fade-in">
-          <div className="flex items-start gap-2">
-            <span className="text-blue-600 text-2xl mt-1"></span>
-            <div>
-              <p className="text-blue-800 font-semibold mb-1">¿Nuevo aquí?</p>
-              <p className="text-blue-700 text-sm mb-2">Este Dashboard es solo un resumen general del sistema. Para gestionar o ver los planes de prueba, navega a la sección <span className="font-bold">‘Planes de Prueba’</span> en el menú o haz clic en <Link to="/planes-prueba" className="underline hover:text-blue-900">Ver Planes de Prueba.</Link></p>
-              <button
-                className="mt-1 text-xs text-blue-600 hover:underline focus:outline-none"
-                onClick={() => setShowHelp(false)}
-                type="button"
-              >Cerrar</button>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="max-w-7xl mx-auto space-y-4 animate-fadeIn relative mt-2">
       
-      <header>
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard de Usabilidad</h1>
-        <p className="text-gray-500 mt-2">Visión general del estado de las pruebas y hallazgos del sistema.</p>
-      </header>
-
-      {/* TARJETAS DE MÉTRICAS (KPIs Principales) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Planes de Prueba</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">{metricas.planes}</p>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg text-2xl">📋</div>
+      {/* HEADER COMPACTO CON SALUD DEL SISTEMA */}
+      <header className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Estado de Evaluaciones</h1>
+          <p className="text-gray-600 text-sm">
+            {metricas.planes === 0 
+              ? "El espacio de trabajo está listo para iniciar." 
+              : metricas.hallazgos > 0 
+                ? `Se han documentado ${metricas.hallazgos} hallazgos clave en ${metricas.planes} planes registrados.` 
+                : "Las pruebas están en curso. Registra observaciones para generar métricas."}
+          </p>
         </div>
         
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Participantes</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">{metricas.participantes}</p>
+        {metricas.planes > 0 && (
+          <div className="text-right hidden md:block">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Salud del Sistema</p>
+            <div className="flex items-center gap-2">
+              <div className="w-24 bg-gray-100 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-1000 ${usabilidad.saludSistema > 70 ? 'bg-emerald-500' : usabilidad.saludSistema > 40 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                  style={{ width: `${usabilidad.saludSistema}%` }}
+                ></div>
+              </div>
+              <span className="text-lg font-bold text-gray-800">{usabilidad.saludSistema}%</span>
+            </div>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-2xl">👥</div>
+        )}
+      </header>
+
+      {/* TARJETAS DE MÉTRICAS PRINCIPALES */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center justify-center hover:shadow-md transition-shadow">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-full text-2xl mb-2">📋</div>
+          <p className="text-3xl font-black text-gray-800">{metricas.planes}</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase mt-1">Planes Activos</p>
+        </div>
+        
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center justify-center hover:shadow-md transition-shadow">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-full text-2xl mb-2">🎯</div>
+          <p className="text-3xl font-black text-gray-800">{usabilidad.tasaExito}%</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase mt-1">Tasa de Éxito</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Tasa de Éxito</p>
-            <p className="text-3xl font-bold text-indigo-600 mt-1">{usabilidad.tasaExito}%</p>
-          </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg text-2xl">🎯</div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Total Errores</p>
-            <p className="text-3xl font-bold text-rose-600 mt-1">{usabilidad.totalErrores}</p>
-          </div>
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-lg text-2xl">⚠️</div>
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center justify-center hover:shadow-md transition-shadow">
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-full text-2xl mb-2">⚠️</div>
+          <p className="text-3xl font-black text-gray-800">{usabilidad.totalErrores}</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase mt-1">Total Errores</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* BLOQUE DE IMPACTO Y ACTIVIDAD */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
-        {/* GRÁFICO DE BARRAS (Severidad de Hallazgos) */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm lg:col-span-1">
-          <h2 className="text-lg font-bold text-gray-800 mb-6">Hallazgos por Severidad</h2>
+        {/* IMPACTO DE HALLAZGOS POR SEVERIDAD */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Impacto de Hallazgos</h2>
           
           {metricas.hallazgos === 0 ? (
-            <div className="text-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-gray-500 text-sm">Aún no hay hallazgos registrados.</p>
+            <div className="text-center py-6">
+              <p className="text-gray-500 text-sm">Aún no hay datos de hallazgos registrados.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Barra Alta */}
+            <div className="space-y-4">
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-rose-700">Alta</span>
-                  <span className="font-bold text-gray-600">{severidad.alta}</span>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">Severidad Alta</span>
+                  <span className="font-bold text-gray-600">{severidad.alta} detectados</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3">
                   <div className="bg-rose-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.alta / metricas.hallazgos) * 100}%` }}></div>
                 </div>
               </div>
 
-              {/* Barra Media */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-amber-600">Media</span>
-                  <span className="font-bold text-gray-600">{severidad.media}</span>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Severidad Media</span>
+                  <span className="font-bold text-gray-600">{severidad.media} detectados</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3">
                   <div className="bg-amber-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.media / metricas.hallazgos) * 100}%` }}></div>
                 </div>
               </div>
 
-              {/* Barra Baja */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-emerald-600">Baja</span>
-                  <span className="font-bold text-gray-600">{severidad.baja}</span>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">Severidad Baja</span>
+                  <span className="font-bold text-gray-600">{severidad.baja} detectados</span>
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.baja / metricas.hallazgos) * 100}%` }}></div>
+                  <div className="bg-emerald-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.baja / metricas.hallazgos) * 100}%` }}></div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* ACTIVIDAD RECIENTE */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Planes de Prueba Recientes</h2>
-            <Link to="/planes-prueba" className="text-sm font-semibold text-blue-600 hover:underline focus:outline-none">
-              Ver todos &rarr;
-            </Link>
+        {/* LISTADO DE EVALUACIONES RECIENTES */}
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-gray-800">Evaluaciones Recientes</h2>
           </div>
 
           {planesRecientes.length === 0 ? (
-            <div className="text-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-gray-500 text-sm">No has creado ningún plan de prueba aún.</p>
-              <Link to="/planes-prueba/nuevo" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
-                Crear el primer plan
-              </Link>
-            </div>
+             <div className="text-center py-6 flex-grow flex flex-col justify-center">
+               <p className="text-gray-500 text-sm">No se han encontrado evaluaciones recientes.</p>
+             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Producto Evaluado</th>
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Objetivo Principal</th>
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Fecha</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {planesRecientes.map((plan) => (
-                    <tr key={plan.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 text-sm font-bold text-gray-800">{plan.producto}</td>
-                      <td className="py-4 text-sm text-gray-600 truncate max-w-xs" title={plan.objetivo}>
-                        {plan.objetivo}
-                      </td>
-                      <td className="py-4 text-sm text-gray-500 font-medium">
-                        {new Date(plan.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2 flex-grow">
+              {planesRecientes.map((plan) => (
+                <Link key={plan.id} to={`/planes-prueba/${plan.id}/tareas`} className="block group">
+                  <div className="p-3 rounded-xl border border-gray-100 hover:border-blue-300 hover:bg-blue-50 transition-colors flex items-center justify-between">
+                    <div className="overflow-hidden pr-2">
+                      <p className="font-bold text-gray-800 text-sm group-hover:text-blue-700 transition-colors truncate">{plan.producto}</p>
+                      <p className="text-xs text-gray-500 truncate">{plan.objetivo}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-[10px] font-semibold text-gray-400 block">
+                        {new Date(plan.fecha).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              
+              <div className="pt-1">
+                <Link to="/planes-prueba" className="block text-center mt-1 text-xs font-bold text-gray-500 hover:text-blue-600 transition-colors">
+                  Ver historial completo
+                </Link>
+              </div>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
