@@ -19,7 +19,7 @@ Esta carpeta contiene la documentación de todas las fases requeridas para la ev
 
 ---
 
-## 🛠️ Justificación Técnica de Implementación
+## Justificación Técnica de Implementación
 Se seleccionó el componente **`TareaForm.tsx`** como pantalla crítica a rediseñar. Las mejoras implementadas incluyen:
 
 1. **Prevención de Errores (Heurística #5):** Se eliminó el truncamiento automático de texto (`value.slice`). En su lugar, se implementaron validaciones visuales dinámicas: el borde del `textarea` cambia a estado de error (rojo) si no se cumple con el mínimo/máximo de caracteres requeridos, y se bloquea el envío del formulario.
