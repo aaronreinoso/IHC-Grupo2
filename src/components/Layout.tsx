@@ -5,6 +5,77 @@ import { supabase } from "../supabaseClient";
 import Modal from "./Modal";
 import type { UsuarioPerfil } from "../types/usuario";
 
+type MenuLink = {
+  path: string;
+  name: string;
+  desc: string;
+  icon: React.ReactNode;
+};
+
+type FloatingLabelProps = {
+  title: string;
+  description?: string;
+  show: boolean;
+  children: React.ReactNode;
+};
+
+const FloatingLabel = ({ title, description, show, children }: FloatingLabelProps) => {
+  return (
+    <div className="group relative w-full overflow-visible">
+      {children}
+
+      {show && (
+        <div
+          className="
+            pointer-events-none
+            absolute
+            left-[calc(100%+0.75rem)]
+            top-1/2
+            z-[9999]
+            hidden
+            w-72
+            -translate-y-1/2
+            whitespace-normal
+            rounded-xl
+            border
+            border-slate-600
+            bg-slate-950
+            px-4
+            py-3
+            text-left
+            shadow-2xl
+            group-hover:block
+          "
+          role="tooltip"
+        >
+          <p className="text-sm font-bold text-white">{title}</p>
+
+          {description && (
+            <p className="mt-1 text-xs leading-5 text-slate-300">{description}</p>
+          )}
+
+          <span
+            className="
+              absolute
+              left-[-6px]
+              top-1/2
+              h-3
+              w-3
+              -translate-y-1/2
+              rotate-45
+              border-b
+              border-l
+              border-slate-600
+              bg-slate-950
+            "
+            aria-hidden="true"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 type OutletContext = {
   userProfile: UsuarioPerfil | null;
   profileLoading: boolean;
@@ -60,13 +131,14 @@ export default function Layout() {
   }, []);
 
   // Menú global (Le quité el mr-2 a los iconos para poder centrarlos bien cuando se colapsa. El margen ahora se lo da el texto)
-  const menuLinks = [
+  const menuLinks: MenuLink[] = [
     {
       path: "/dashboard",
       name: "Dashboard General",
+      desc: "Resumen, métricas globales y estado general de las pruebas.",
       icon: (
         <svg
-          className="w-6 h-6"
+          className="h-6 w-6"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -76,14 +148,14 @@ export default function Layout() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75V19.5A2.25 2.25 0 006.75 21.75h2.25m6 0h2.25A2.25 2.25 0 0019.5 19.5V9.75m-15 0L12 3.75m0 0l7.5 7.5" />
         </svg>
       ),
-      desc: "Resumen y métricas globales.",
     },
     {
       path: "/planes-prueba",
       name: "Planes de Prueba",
+      desc: "Crea, consulta y administra planes de evaluación de usabilidad.",
       icon: (
         <svg
-          className="w-6 h-6"
+          className="h-6 w-6"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -95,7 +167,6 @@ export default function Layout() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 10.5h6m-6 3h6m-6 3h3" />
         </svg>
       ),
-      desc: "Gestión y consulta de planes.",
     },
   ];
 
@@ -116,7 +187,7 @@ export default function Layout() {
         className={`bg-slate-900 text-white flex flex-col shadow-xl z-40 transition-all duration-300 ease-in-out
           fixed md:static inset-y-0 left-0 h-full
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          ${isCollapsed ? "w-20" : "w-64"}
+          ${isCollapsed ? "w-20" : "w-72"}
         `}
       >
         <div className={`p-6 border-b border-slate-800 flex items-center ${isCollapsed ? "justify-center px-4" : "justify-between"}`}>
@@ -158,31 +229,62 @@ export default function Layout() {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 space-y-2 overflow-visible px-4 py-6">
           {menuLinks.map((link) => (
-            <NavLink
+            <FloatingLabel
               key={link.path}
-              to={link.path}
-              title={isCollapsed ? link.name : ""} // Muestra el nombre al pasar el mouse si está recogido
-              className={({ isActive }) =>
-                `flex flex-col rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 
-                ${isCollapsed ? "items-center justify-center p-3" : "items-start px-4 py-3"}
-                ${isActive
-                  ? "bg-blue-600 text-white font-semibold shadow-md md:translate-x-1 md:scale-105"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`
-              }
+              title={link.name}
+              description={link.desc}
+              show={isCollapsed}
             >
-              <span className={`flex items-center w-full ${isCollapsed ? "justify-center" : ""}`}>
-                {link.icon}
-                <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "hidden" : "block"}`}>
-                  {link.name}
+              <NavLink
+                to={link.path}
+                aria-label={`${link.name}. ${link.desc}`}
+                className={({ isActive }) =>
+                  `
+                    flex
+                    w-full
+                    rounded-2xl
+                    transition-all
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-blue-400
+                    ${
+                      isCollapsed
+                        ? "items-center justify-center p-3"
+                        : "items-center px-4 py-4"
+                    }
+                    ${
+                      isActive
+                        ? "bg-blue-700 text-white font-semibold shadow-md"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }
+                  `
+                }
+              >
+                <span
+                  className={`flex w-full items-center ${
+                    isCollapsed ? "justify-center" : ""
+                  }`}
+                >
+                  {link.icon}
+
+                  <span
+                    className={`
+                      ml-4
+                      whitespace-nowrap
+                      text-lg
+                      font-semibold
+                      transition-opacity
+                      duration-200
+                      ${isCollapsed ? "sr-only" : "block"}
+                    `}
+                  >
+                    {link.name}
+                  </span>
                 </span>
-              </span>
-              <span className={`text-xs text-slate-400 leading-tight mt-1 ml-9 transition-opacity duration-200 ${isCollapsed ? "hidden" : "block"}`}>
-                {link.desc}
-              </span>
-            </NavLink>
+              </NavLink>
+            </FloatingLabel>
           ))}
         </nav>
 
