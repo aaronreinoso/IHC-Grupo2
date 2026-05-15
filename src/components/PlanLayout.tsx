@@ -2,6 +2,84 @@ import { NavLink, Outlet, useParams, useNavigate, useLocation } from 'react-rout
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
+type PlanLink = {
+  path: string;
+  name: string;
+  enabled: boolean;
+  description: string;
+  disabledReason?: string;
+  icon: React.ReactNode;
+};
+
+interface FloatingLabelProps {
+  text: string;
+  description?: string;
+  show: boolean;
+  children: React.ReactNode;
+}
+
+const FloatingLabel: React.FC<FloatingLabelProps> = ({
+  text,
+  description,
+  show,
+  children,
+}) => {
+  return (
+    <div className="group relative w-full overflow-visible">
+      {children}
+
+      {show && (
+        <div
+          className="
+            pointer-events-none
+            absolute
+            left-[calc(100%+0.75rem)]
+            top-1/2
+            z-[9999]
+            hidden
+            w-72
+            -translate-y-1/2
+            whitespace-normal
+            rounded-xl
+            border
+            border-slate-600
+            bg-slate-950
+            px-4
+            py-3
+            text-left
+            shadow-2xl
+            group-hover:block
+          "
+          role="tooltip"
+        >
+          <p className="text-sm font-bold text-white">{text}</p>
+
+          {description && (
+            <p className="mt-1 text-xs leading-5 text-slate-300">{description}</p>
+          )}
+
+          <span
+            className="
+              absolute
+              left-[-6px]
+              top-1/2
+              h-3
+              w-3
+              -translate-y-1/2
+              rotate-45
+              border-b
+              border-l
+              border-slate-600
+              bg-slate-950
+            "
+            aria-hidden="true"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function PlanLayout() {
   const { planId } = useParams<{ planId: string }>();
   const navigate = useNavigate();
@@ -14,6 +92,9 @@ export default function PlanLayout() {
   // Estados de Responsividad y UI (Tu aporte)
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const lockedReason =
+    'Esta sección se habilita cuando el plan tenga al menos una tarea y un participante.';
 
   // Consultar si existen tareas y participantes (Lógica original)
   useEffect(() => {
@@ -60,29 +141,35 @@ export default function PlanLayout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const planLinks = [
+  const planLinks: PlanLink[] = [
     { 
       path: `/planes-prueba/${planId}/tareas`, 
       name: 'Tareas del Test', 
-      enabled: true, 
+      enabled: true,
+      description: 'Crea y organiza las tareas que realizará el usuario durante la prueba de usabilidad.',
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5.25H7.5A2.25 2.25 0 0 0 5.25 7.5v9A2.25 2.25 0 0 0 7.5 18.75h9A2.25 2.25 0 0 0 18.75 16.5v-9A2.25 2.25 0 0 0 16.5 5.25H15m-6 0a2.25 2.25 0 1 1 4.5 0m-4.5 0a2.25 2.25 0 0 0 4.5 0m-7.5 6h6m-6 3h4.5"/></svg> 
     },
     { 
       path: `/planes-prueba/${planId}/participantes`, 
       name: 'Participantes', 
-      enabled: true, 
+      enabled: true,
+      description: 'Registra y consulta las personas que participarán en la evaluación del producto.',
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a8.97 8.97 0 0 0 3.74-1.272A4.5 4.5 0 0 0 18 9.75m0 8.97v-.22a5.25 5.25 0 0 0-5.25-5.25H9.75A5.25 5.25 0 0 0 4.5 18.5v.22m13.5 0A11.96 11.96 0 0 1 12 20.25c-2.183 0-4.23-.584-6-1.53m12-8.97a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Zm6.75 0a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Zm-13.5 0a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></svg>
     },
     { 
       path: `/planes-prueba/${planId}/observaciones`, 
       name: 'Registro de Observación', 
-      enabled: hasTarea && hasParticipante, 
+      enabled: hasTarea && hasParticipante,
+      description: 'Anota lo que ocurre durante la prueba: errores, dificultades, tiempo y comportamiento del usuario.',
+      disabledReason: lockedReason,
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-8.25a2.25 2.25 0 0 0-2.25-2.25H8.25A2.25 2.25 0 0 0 6 6v12a2.25 2.25 0 0 0 2.25 2.25h6.75M16.5 18.75h6m-6-3h6m-6 6h6"/></svg> 
     },
     { 
       path: `/planes-prueba/${planId}/hallazgos`, 
       name: 'Hallazgos y Mejoras', 
-      enabled: hasTarea && hasParticipante, 
+      enabled: hasTarea && hasParticipante,
+      description: 'Revisa los problemas encontrados y convierte las observaciones en oportunidades de mejora.',
+      disabledReason: lockedReason,
       icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-1.5m0 0a4.5 4.5 0 1 0-4.5-4.5c0 1.61.846 3.02 2.118 3.814.24.15.382.41.382.693V18m2 0H10m2 0h2.25m-4.5 3h4.5"/></svg> 
     },
   ];
@@ -111,22 +198,29 @@ export default function PlanLayout() {
           
           {/* Fila superior: Botón de Volver y Botón de Colapsar */}
           <div className="flex w-full justify-between items-center mb-4">
-            <button 
-              onClick={() => navigate('/planes-prueba')}
-              className={`flex items-center text-sm text-slate-300 hover:text-white transition-colors ${isCollapsed ? "justify-center w-full" : ""}`}
-              title="Volver a Planes"
+            <FloatingLabel
+              text="Volver a planes"
+              description="Regresa al listado principal para elegir, crear o revisar otros planes de prueba."
+              show={isCollapsed}
             >
-              <svg className={`w-5 h-5 ${isCollapsed ? "" : "mr-2"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-              <span className={`${isCollapsed ? "hidden" : "block"}`}>Volver</span>
-            </button>
+              <button 
+                onClick={() => navigate('/planes-prueba')}
+                className={`flex items-center rounded-lg text-sm text-slate-300 hover:text-white hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${isCollapsed ? "justify-center w-full p-2" : "px-2 py-2"}`}
+                aria-label="Volver a planes de prueba"
+              >
+                <svg className={`w-5 h-5 ${isCollapsed ? "" : "mr-2"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span className={`${isCollapsed ? "sr-only" : "block"}`}>Volver</span>
+              </button>
+            </FloatingLabel>
             
             {/* Botón para colapsar (Solo PC) */}
             <button 
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden md:flex p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
-              aria-label="Alternar menú"
+              className="hidden md:flex p-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label={isCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+              aria-expanded={!isCollapsed}
             >
-              <svg className={`w-5 h-5 transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 transition-transform duration-300 ${isCollapsed ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
               </svg>
             </button>
@@ -138,46 +232,61 @@ export default function PlanLayout() {
           </div>
         </div>
         
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto overflow-x-hidden">
-          {planLinks.map((link) => (
-            link.enabled ? (
-              <NavLink
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-visible">
+          {planLinks.map((link) => {
+            const tooltipDescription = link.enabled ? link.description : link.disabledReason || link.description;
+
+            return link.enabled ? (
+              <FloatingLabel
                 key={link.path}
-                to={link.path}
-                title={isCollapsed ? link.name : ""}
-                className={({ isActive }) =>
-                  `flex flex-col rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 
-                  ${isCollapsed ? "items-center justify-center p-3" : "items-start px-4 py-3"}
-                  ${isActive
-                    ? 'bg-blue-600 text-white font-semibold shadow-md md:translate-x-1'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                  }`
-                }
+                text={link.name}
+                description={tooltipDescription}
+                show={isCollapsed}
               >
-                <span className={`flex items-center w-full ${isCollapsed ? "justify-center" : ""}`}>
-                  {link.icon}
-                  <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "hidden" : "block"}`}>
-                    {link.name}
+                <NavLink
+                  to={link.path}
+                  aria-label={`${link.name}. ${link.description}`}
+                  className={({ isActive }) =>
+                    `flex w-full rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 
+                    ${isCollapsed ? "items-center justify-center p-3" : "items-start px-4 py-3"}
+                    ${isActive
+                      ? 'bg-blue-600 text-white font-semibold shadow-md md:translate-x-1'
+                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    }`
+                  }
+                >
+                  <span className={`flex items-center w-full ${isCollapsed ? "justify-center" : ""}`}>
+                    {link.icon}
+                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "sr-only" : "block"}`}>
+                      {link.name}
+                    </span>
                   </span>
-                </span>
-              </NavLink>
+                </NavLink>
+              </FloatingLabel>
             ) : (
-              <span
+              <FloatingLabel
                 key={link.path}
-                className={`flex flex-col rounded-lg bg-slate-700 text-slate-400 opacity-60 cursor-not-allowed select-none
-                  ${isCollapsed ? "items-center justify-center p-3" : "items-start px-4 py-3"}
-                `}
-                title={isCollapsed ? "Deshabilitado" : "Agrega al menos una tarea y un participante para habilitar"}
+                text={link.name}
+                description={tooltipDescription}
+                show={isCollapsed}
               >
-                <span className={`flex items-center w-full ${isCollapsed ? "justify-center" : ""}`}>
-                  {link.icon}
-                  <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "hidden" : "block"}`}>
-                    {link.name}
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  aria-label={`${link.name}. Bloqueado. ${link.disabledReason}`}
+                  className={`flex w-full rounded-lg bg-slate-700 text-slate-400 opacity-80 cursor-not-allowed select-none border border-slate-600 ${isCollapsed ? "items-center justify-center p-3" : "items-start px-4 py-3"}`}
+                >
+                  <span className={`flex items-center w-full ${isCollapsed ? "justify-center" : ""}`}>
+                    {link.icon}
+                    <span className={`ml-3 whitespace-nowrap transition-opacity duration-200 ${isCollapsed ? "sr-only" : "block"}`}>
+                      {link.name}
+                    </span>
                   </span>
-                </span>
-              </span>
-            )
-          ))}
+                </button>
+              </FloatingLabel>
+            );
+          })}
         </nav>
       </aside>
 
@@ -188,9 +297,11 @@ export default function PlanLayout() {
         <header className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center shadow-sm z-20 shrink-0">
           <button 
             onClick={() => setIsMobileOpen(true)} 
-            className="text-slate-800 hover:text-blue-600 focus:outline-none p-1"
+            className="text-slate-800 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
+            aria-label="Abrir navegación del plan"
+            aria-expanded={isMobileOpen}
           >
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
