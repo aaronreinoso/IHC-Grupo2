@@ -132,6 +132,16 @@ export default function Participantes() {
               <option value="Postgrado (Avanzado)">Postgrado (Avanzado)</option>
             </select>
             {errores.perfil && <span className="mt-1 text-sm text-red-600 font-medium">{errores.perfil}</span>}
+            
+            {/* ERROR 3: Microcopy para aclarar la selección */}
+            <div className="mt-2 text-xs text-gray-600 bg-gray-100 p-2 rounded border border-gray-200">
+              <span className="block font-semibold mb-1">ℹ️ Guía de perfiles:</span>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li><b>Básico:</b> Uso casual de tecnología, ofimática básica.</li>
+                <li><b>Medio:</b> Uso diario, familiarizado con software y plataformas web.</li>
+                <li><b>Avanzado:</b> Conocimientos técnicos profundos o desarrollo.</li>
+              </ul>
+            </div>
           </div>
         </div>
         <button type="submit" disabled={loading} className="mt-2 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm">
