@@ -1,73 +1,19 @@
-# React + TypeScript + Vite
+# Resumen de Implementación UX
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Se han implementado correcciones estructurales y visuales en la base de código respondiendo a 9 de las 10 violaciones heurísticas encontradas (excluyendo Auth Guard - backend):
 
-Currently, two official plugins are available:
+1. **Visibilidad del Estado del Sistema (Heurística #1):**
+   - Se implementaron `skeletons` de carga en el `Dashboard.tsx` para reducir la percepción de tiempo de espera.
+   - Se agregó un estado de captura de errores (`fetchError`) con un botón de reintento de conexión.
+   - Feedback visual interactivo (Spinner SVG) en botones de guardado asíncrono en `TareaForm.tsx`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+2. **Ayuda y Documentación (Heurística #10):**
+   - Integración de *Microcopy* explícito debajo del selector de perfiles en `Participantes.tsx`.
+   - Inserción de *Tooltips* nativos (`title` sobre iconos ℹ️) en etiquetas de formularios complejos.
 
-## React Compiler
+3. **Prevención de Errores (Heurística #5):**
+   - Refactorización de `tareaValidation.ts` introduciendo validación semántica mediante expresiones regulares `/(.)\1{4,}/` para bloquear entradas inválidas y ajuste de longitudes mínimas estrictas.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Flexibilidad, Consistencia y Estética (Heurísticas #4, #7 y #8):**
+   - Rediseño de componentes `Layout.tsx` y `PlanLayout.tsx` permitiendo un estado de colapso (`isCollapsed`) que optimiza el espacio de trabajo en pantallas de escritorio.
+   - Implementación de lógica dinámica en `Dashboard.tsx` para inyectar colores semánticos (Emerald, Amber, Rose) dependiendo del porcentaje de la Tasa de Éxito.
