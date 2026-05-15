@@ -5,7 +5,7 @@ import type { Tarea } from "../types/tarea";
 import TareasTable from "../components/TareasTable";
 import TareasSearch from "../components/TareasSearch";
 import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
-import Toast from "../components/Toast"; // <-- NUEVO
+import Toast from "../components/Toast";
 
 const TareasList: React.FC = () => {
   const { planId } = useParams();
@@ -43,7 +43,6 @@ const TareasList: React.FC = () => {
 
   useEffect(() => {
     fetchTareas();
-    // Limpiamos el state del router history para no repetir el feedback al recargar
     if (location.state?.feedback) {
       window.history.replaceState({}, document.title);
     }
@@ -87,16 +86,19 @@ const TareasList: React.FC = () => {
           <TareasSearch search={search} setSearch={setSearch} />
         </div>
         
-        <Link
-          to={`/planes-prueba/${planId}/tareas/nueva`}
-          className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all flex items-center justify-center gap-2"
-          aria-label="Crear nueva tarea para este plan de prueba"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          Nueva Tarea
-        </Link>
+        {/* CORRECCIÓN: El botón azul SOLO aparece si ya existen tareas */}
+        {!loading && tareas.length > 0 && (
+          <Link
+            to={`/planes-prueba/${planId}/tareas/nueva`}
+            className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all flex items-center justify-center gap-2"
+            aria-label="Crear nueva tarea para este plan de prueba"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Nueva Tarea
+          </Link>
+        )}
       </div>
       
       {loading && (
@@ -109,7 +111,23 @@ const TareasList: React.FC = () => {
         </div>
       )}
       
-      {!loading && (
+      {/* Si no hay tareas, se muestra únicamente este bloque con el botón rojo */}
+      {!loading && tareas.length === 0 ? (
+        <div className="text-center py-12 bg-rose-50 border-2 border-dashed border-rose-200 rounded-2xl relative overflow-hidden animate-fadeIn my-6">
+          <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
+          <span className="text-5xl mb-4 block">⚠️</span>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Plan sin tareas asignadas</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Este plan de prueba aún está inactivo. Para poder evaluar la usabilidad con participantes, necesitas definir al menos una tarea.
+          </p>
+          <button 
+            onClick={() => navigate(`/planes-prueba/${planId}/tareas/nueva`)}
+            className="bg-rose-600 text-white px-6 py-3 rounded-full font-bold hover:bg-rose-700 transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 mx-auto"
+          >
+            <span>+</span> Añadir la primera tarea
+          </button>
+        </div>
+      ) : !loading && (
         <TareasTable 
           tareas={filteredTareas} 
           onEdit={(id) => navigate(`/planes-prueba/${planId}/tareas/editar/${id}`)} 
@@ -117,7 +135,6 @@ const TareasList: React.FC = () => {
         />
       )}
 
-      {/* Manejo de Toast para Feedback o Errores de carga */}
       <Toast message={error || feedback} onClose={() => { setError(""); setFeedback(""); }} />
 
       <ConfirmDeleteModal 

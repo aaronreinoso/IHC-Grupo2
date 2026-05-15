@@ -1,12 +1,108 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '../supabaseClient';
 import { Link } from 'react-router-dom';
+
+type MetricTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
+
+interface MetricCardProps {
+  title: string;
+  value: string | number;
+  description: string;
+  icon: string;
+  tone: MetricTone;
+}
+
+const toneStyles: Record<
+  MetricTone,
+  {
+    border: string;
+    bg: string;
+    text: string;
+    iconBg: string;
+    iconText: string;
+    badge: string;
+  }
+> = {
+  info: {
+    border: 'border-blue-200',
+    bg: 'bg-blue-50',
+    text: 'text-blue-800',
+    iconBg: 'bg-blue-100',
+    iconText: 'text-blue-800',
+    badge: 'bg-blue-100 text-blue-800',
+  },
+  success: {
+    border: 'border-emerald-300',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-800',
+    iconBg: 'bg-emerald-100',
+    iconText: 'text-emerald-800',
+    badge: 'bg-emerald-100 text-emerald-800',
+  },
+  warning: {
+    border: 'border-amber-300',
+    bg: 'bg-amber-50',
+    text: 'text-amber-900',
+    iconBg: 'bg-amber-100',
+    iconText: 'text-amber-900',
+    badge: 'bg-amber-100 text-amber-900',
+  },
+  danger: {
+    border: 'border-red-300',
+    bg: 'bg-red-50',
+    text: 'text-red-800',
+    iconBg: 'bg-red-100',
+    iconText: 'text-red-800',
+    badge: 'bg-red-100 text-red-800',
+  },
+  neutral: {
+    border: 'border-gray-200',
+    bg: 'bg-white',
+    text: 'text-gray-800',
+    iconBg: 'bg-gray-100',
+    iconText: 'text-gray-800',
+    badge: 'bg-gray-100 text-gray-800',
+  },
+};
+
+const MetricCard = ({ title, value, description, icon, tone }: MetricCardProps) => {
+  const style = toneStyles[tone];
+
+  return (
+    <article
+      className={`rounded-2xl border ${style.border} ${style.bg} p-5 shadow-sm transition-shadow hover:shadow-md`}
+      aria-label={`${title}: ${value}. ${description}`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-wide text-gray-700">{title}</p>
+          <p className={`mt-2 text-4xl font-extrabold ${style.text}`}>{value}</p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${style.iconBg} ${style.iconText}`}
+          aria-hidden="true"
+        >
+          {icon}
+        </div>
+      </div>
+
+      <p className="mt-4 text-sm leading-5 text-gray-700">{description}</p>
+    </article>
+  );
+};
+
+type PlanItem = {
+  id: string;
+  producto: string;
+  objetivo: string;
+  fecha: string;
+};
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
-  
-  // Estados para las métricas generales
+
   const [metricas, setMetricas] = useState({
     planes: 0,
     participantes: 0,
@@ -14,25 +110,22 @@ export default function Dashboard() {
     hallazgos: 0,
   });
 
-  // Estados para métricas de usabilidad (Cálculos de las observaciones)
   const [usabilidad, setUsabilidad] = useState({
     tasaExito: 0,
     totalErrores: 0,
   });
 
-  // Estado para gráficos de hallazgos
   const [severidad, setSeveridad] = useState({ alta: 0, media: 0, baja: 0 });
-  const [planesRecientes, setPlanesRecientes] = useState<any[]>([]);
+  const [planesRecientes, setPlanesRecientes] = useState<PlanItem[]>([]);
 
   useEffect(() => {
-    cargarDatosDashboard();
+    void cargarDatosDashboard();
   }, []);
 
   const cargarDatosDashboard = async () => {
     setLoading(true);
 
     try {
-      // 1. Obtener conteos generales
       const { count: countPlanes } = await supabase.from('pruebas_usabilidad').select('*', { count: 'exact', head: true });
       const { count: countParticipantes } = await supabase.from('participantes').select('*', { count: 'exact', head: true });
       const { count: countTareas } = await supabase.from('tareas').select('*', { count: 'exact', head: true });
@@ -45,38 +138,38 @@ export default function Dashboard() {
         hallazgos: countHallazgos || 0,
       });
 
-      // 2. Calcular métricas de observaciones (Éxito y Errores)
       const { data: observaciones } = await supabase.from('observaciones').select('exito, errores');
-      
+
+      let tasa = 0;
+      let erroresTotales = 0;
+
       if (observaciones && observaciones.length > 0) {
-        const exitosas = observaciones.filter(obs => obs.exito).length;
-        const totalErrores = observaciones.reduce((acc, obs) => acc + (obs.errores || 0), 0);
-        
-        setUsabilidad({
-          tasaExito: Math.round((exitosas / observaciones.length) * 100),
-          totalErrores: totalErrores
-        });
+        const exitosas = observaciones.filter((obs) => obs.exito).length;
+        erroresTotales = observaciones.reduce((acc, obs) => acc + (obs.errores || 0), 0);
+        tasa = Math.round((exitosas / observaciones.length) * 100);
       }
 
-      // 3. Obtener severidad de los hallazgos
+      setUsabilidad({
+        tasaExito: tasa,
+        totalErrores: erroresTotales,
+      });
+
       const { data: hallazgosData } = await supabase.from('hallazgos').select('severidad');
       if (hallazgosData) {
         setSeveridad({
-          alta: hallazgosData.filter(h => h.severidad === 'Alta').length,
-          media: hallazgosData.filter(h => h.severidad === 'Media').length,
-          baja: hallazgosData.filter(h => h.severidad === 'Baja').length,
+          alta: hallazgosData.filter((h) => h.severidad === 'Alta').length,
+          media: hallazgosData.filter((h) => h.severidad === 'Media').length,
+          baja: hallazgosData.filter((h) => h.severidad === 'Baja').length,
         });
       }
 
-      // 4. Últimos planes de prueba para la tabla de actividad
       const { data: recientes } = await supabase
         .from('pruebas_usabilidad')
         .select('id, producto, objetivo, fecha')
         .order('created_at', { ascending: false })
         .limit(4);
-        
-      if (recientes) setPlanesRecientes(recientes);
 
+      if (recientes) setPlanesRecientes(recientes as PlanItem[]);
     } catch (error) {
       console.error('Error cargando el dashboard:', error);
     } finally {
@@ -84,168 +177,251 @@ export default function Dashboard() {
     }
   };
 
+  const getSuccessTone = (): MetricTone => {
+    if (usabilidad.tasaExito >= 80) return 'success';
+    if (usabilidad.tasaExito >= 50) return 'warning';
+    return 'danger';
+  };
+
+  const getSuccessDescription = () => {
+    if (usabilidad.tasaExito >= 80) return 'Buen desempeño: la mayoría de tareas se completan correctamente.';
+    if (usabilidad.tasaExito >= 50) return 'Atención: hay tareas que podrían necesitar ajustes de diseño.';
+    return 'Crítico: la mayoría de usuarios no está completando las tareas.';
+  };
+
+  const getErrorTone = (): MetricTone => {
+    if (usabilidad.totalErrores === 0) return 'success';
+    if (usabilidad.totalErrores <= 5) return 'warning';
+    return 'danger';
+  };
+
+  const getErrorDescription = () => {
+    if (usabilidad.totalErrores === 0) return 'Excelente: no se han registrado errores en las observaciones.';
+    if (usabilidad.totalErrores <= 5) return 'Revisar: existen algunos errores que pueden afectar la experiencia.';
+    return 'Prioridad alta: los errores pueden estar dificultando el uso del sistema.';
+  };
+
+  const getSeverityPercentage = (value: number) => {
+    if (metricas.hallazgos === 0) return 0;
+    return Math.round((value / metricas.hallazgos) * 100);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex h-full items-center justify-center" role="status">
+        <span className="sr-only">Cargando dashboard</span>
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-700" />
       </div>
     );
   }
 
-  
+  const successTone = getSuccessTone();
+  const errorTone = getErrorTone();
+
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-fade-in relative">
-      {/* Botón flotante de ayuda */}
+    <div className="relative mx-auto max-w-7xl space-y-8 animate-fadeIn">
       <button
-        aria-label="Mostrar ayuda del Dashboard"
-        className="fixed top-6 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
+        aria-label="Mostrar ayuda del dashboard"
+        className="fixed right-8 top-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white shadow-lg transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
         onClick={() => setShowHelp((prev) => !prev)}
         type="button"
       >
-        <span className="text-2xl font-bold">?</span>
+        <span className="text-2xl font-bold" aria-hidden="true">?</span>
       </button>
 
-      {/* Mensaje de ayuda (divulgación progresiva) */}
       {showHelp && (
-        <div className="fixed top-20 right-8 z-50 bg-white border border-blue-200 rounded-lg shadow-lg p-4 max-w-xs animate-fade-in">
-          <div className="flex items-start gap-2">
-            <span className="text-blue-600 text-2xl mt-1"></span>
-            <div>
-              <p className="text-blue-800 font-semibold mb-1">¿Nuevo aquí?</p>
-              <p className="text-blue-700 text-sm mb-2">Este Dashboard es solo un resumen general del sistema. Para gestionar o ver los planes de prueba, navega a la sección <span className="font-bold">‘Planes de Prueba’</span> en el menú o haz clic en <Link to="/planes-prueba" className="underline hover:text-blue-900">Ver Planes de Prueba.</Link></p>
-              <button
-                className="mt-1 text-xs text-blue-600 hover:underline focus:outline-none"
-                onClick={() => setShowHelp(false)}
-                type="button"
-              >Cerrar</button>
-            </div>
-          </div>
+        <div
+          className="fixed right-8 top-20 z-50 max-w-xs rounded-xl border border-blue-200 bg-white p-4 shadow-lg animate-fadeIn"
+          role="dialog"
+          aria-label="Ayuda del dashboard"
+        >
+          <p className="mb-1 font-bold text-blue-800">¿Nuevo aquí?</p>
+
+          <p className="mb-2 text-sm leading-6 text-blue-800">
+            Este dashboard resume el estado general del sistema. Para gestionar los planes, entra a{' '}
+            <span className="font-bold">Planes de Prueba</span> o usa el enlace{' '}
+            <Link to="/planes-prueba" className="font-semibold underline hover:text-blue-950">
+              Ver Planes de Prueba
+            </Link>
+            .
+          </p>
+
+          <button
+            className="mt-1 rounded text-xs font-semibold text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-300"
+            onClick={() => setShowHelp(false)}
+            type="button"
+          >
+            Cerrar
+          </button>
         </div>
       )}
-      
+
       <header>
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard de Usabilidad</h1>
-        <p className="text-gray-500 mt-2">Visión general del estado de las pruebas y hallazgos del sistema.</p>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard de Usabilidad</h1>
+        <p className="mt-2 max-w-3xl text-gray-600">
+          Revisa rápidamente el estado de tus pruebas, la participación, los errores y los hallazgos que requieren atención.
+        </p>
       </header>
 
-      {/* TARJETAS DE MÉTRICAS (KPIs Principales) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Planes de Prueba</p>
-            <p className="text-3xl font-bold text-blue-600 mt-1">{metricas.planes}</p>
-          </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg text-2xl">📋</div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Participantes</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">{metricas.participantes}</p>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-2xl">👥</div>
-        </div>
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4" aria-label="Resumen de métricas principales">
+        <MetricCard
+          title="Planes de prueba"
+          value={metricas.planes}
+          description="Cantidad total de planes creados para evaluar productos o flujos."
+          icon="📋"
+          tone="info"
+        />
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Tasa de Éxito</p>
-            <p className="text-3xl font-bold text-indigo-600 mt-1">{usabilidad.tasaExito}%</p>
-          </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg text-2xl">🎯</div>
-        </div>
+        <MetricCard
+          title="Participantes"
+          value={metricas.participantes}
+          description="Personas registradas para participar en las pruebas de usabilidad."
+          icon="👥"
+          tone="info"
+        />
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-          <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Total Errores</p>
-            <p className="text-3xl font-bold text-rose-600 mt-1">{usabilidad.totalErrores}</p>
-          </div>
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-lg text-2xl">⚠️</div>
-        </div>
-      </div>
+        <MetricCard
+          title="Tasa de éxito"
+          value={`${usabilidad.tasaExito}%`}
+          description={getSuccessDescription()}
+          icon="🎯"
+          tone={successTone}
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* GRÁFICO DE BARRAS (Severidad de Hallazgos) */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm lg:col-span-1">
-          <h2 className="text-lg font-bold text-gray-800 mb-6">Hallazgos por Severidad</h2>
-          
+        <MetricCard
+          title="Errores registrados"
+          value={usabilidad.totalErrores}
+          description={getErrorDescription()}
+          icon="⚠️"
+          tone={errorTone}
+        />
+      </section>
+
+      <section className="grid grid-cols-1 gap-8 lg:grid-cols-3" aria-label="Detalle del dashboard">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-1">
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-gray-900">Hallazgos por severidad</h2>
+            <p className="mt-1 text-sm text-gray-600">Prioriza primero los hallazgos de severidad alta.</p>
+          </div>
+
           {metricas.hallazgos === 0 ? (
-            <div className="text-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-gray-500 text-sm">Aún no hay hallazgos registrados.</p>
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+              <p className="text-sm font-medium text-gray-600">Aún no hay hallazgos registrados.</p>
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Barra Alta */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-rose-700">Alta</span>
-                  <span className="font-bold text-gray-600">{severidad.alta}</span>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="inline-flex items-center gap-2 font-bold text-red-800">
+                    <span className="h-3 w-3 rounded-full bg-red-600" aria-hidden="true" />
+                    Alta
+                  </span>
+                  <span className="font-bold text-gray-800">
+                    {severidad.alta} · {getSeverityPercentage(severidad.alta)}%
+                  </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-rose-500 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.alta / metricas.hallazgos) * 100}%` }}></div>
+
+                <div className="h-4 w-full rounded-full bg-gray-100" aria-label={`Severidad alta: ${severidad.alta} hallazgos`}>
+                  <div
+                    className="h-4 rounded-full bg-red-600 transition-all duration-1000"
+                    style={{ width: `${getSeverityPercentage(severidad.alta)}%` }}
+                  />
                 </div>
               </div>
 
-              {/* Barra Media */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-amber-600">Media</span>
-                  <span className="font-bold text-gray-600">{severidad.media}</span>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="inline-flex items-center gap-2 font-bold text-amber-900">
+                    <span className="h-3 w-3 rounded-full bg-amber-500" aria-hidden="true" />
+                    Media
+                  </span>
+                  <span className="font-bold text-gray-800">
+                    {severidad.media} · {getSeverityPercentage(severidad.media)}%
+                  </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-amber-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.media / metricas.hallazgos) * 100}%` }}></div>
+
+                <div className="h-4 w-full rounded-full bg-gray-100" aria-label={`Severidad media: ${severidad.media} hallazgos`}>
+                  <div
+                    className="h-4 rounded-full bg-amber-500 transition-all duration-1000"
+                    style={{ width: `${getSeverityPercentage(severidad.media)}%` }}
+                  />
                 </div>
               </div>
 
-              {/* Barra Baja */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-emerald-600">Baja</span>
-                  <span className="font-bold text-gray-600">{severidad.baja}</span>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="inline-flex items-center gap-2 font-bold text-emerald-800">
+                    <span className="h-3 w-3 rounded-full bg-emerald-600" aria-hidden="true" />
+                    Baja
+                  </span>
+                  <span className="font-bold text-gray-800">
+                    {severidad.baja} · {getSeverityPercentage(severidad.baja)}%
+                  </span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div className="bg-emerald-400 h-3 rounded-full transition-all duration-1000" style={{ width: `${(severidad.baja / metricas.hallazgos) * 100}%` }}></div>
+
+                <div className="h-4 w-full rounded-full bg-gray-100" aria-label={`Severidad baja: ${severidad.baja} hallazgos`}>
+                  <div
+                    className="h-4 rounded-full bg-emerald-600 transition-all duration-1000"
+                    style={{ width: `${getSeverityPercentage(severidad.baja)}%` }}
+                  />
                 </div>
+              </div>
+
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+                <strong>Lectura rápida:</strong> los hallazgos en rojo deben atenderse primero porque pueden bloquear o dificultar tareas importantes.
               </div>
             </div>
           )}
         </div>
 
-        {/* ACTIVIDAD RECIENTE */}
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm lg:col-span-2">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Planes de Prueba Recientes</h2>
-            <Link to="/planes-prueba" className="text-sm font-semibold text-blue-600 hover:underline focus:outline-none">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Planes de prueba recientes</h2>
+              <p className="mt-1 text-sm text-gray-600">Últimos planes creados o registrados en el sistema.</p>
+            </div>
+
+            <Link
+              to="/planes-prueba"
+              className="rounded text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
               Ver todos &rarr;
             </Link>
           </div>
 
           {planesRecientes.length === 0 ? (
-            <div className="text-center p-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-              <p className="text-gray-500 text-sm">No has creado ningún plan de prueba aún.</p>
-              <Link to="/planes-prueba/nuevo" className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+              <p className="text-sm font-medium text-gray-600">No has creado ningún plan de prueba aún.</p>
+
+              <Link
+                to="/planes-prueba/nuevo"
+                className="mt-4 inline-block rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
+              >
                 Crear el primer plan
               </Link>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Producto Evaluado</th>
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Objetivo Principal</th>
-                    <th className="pb-3 text-sm font-semibold text-gray-500">Fecha</th>
+                    <th className="pb-3 text-sm font-bold text-gray-600">Producto evaluado</th>
+                    <th className="pb-3 text-sm font-bold text-gray-600">Objetivo principal</th>
+                    <th className="pb-3 text-sm font-bold text-gray-600">Fecha</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-100">
                   {planesRecientes.map((plan) => (
-                    <tr key={plan.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 text-sm font-bold text-gray-800">{plan.producto}</td>
-                      <td className="py-4 text-sm text-gray-600 truncate max-w-xs" title={plan.objetivo}>
+                    <tr key={plan.id} className="transition-colors hover:bg-gray-50">
+                      <td className="py-4 text-sm font-bold text-gray-900">{plan.producto}</td>
+
+                      <td className="max-w-xs truncate py-4 text-sm text-gray-700" title={plan.objetivo}>
                         {plan.objetivo}
                       </td>
-                      <td className="py-4 text-sm text-gray-500 font-medium">
-                        {new Date(plan.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+
+                      <td className="py-4 text-sm font-semibold text-gray-600">
+                        {new Date(plan.fecha).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
                       </td>
                     </tr>
                   ))}
@@ -254,8 +430,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-
-      </div>
+      </section>
     </div>
   );
 }

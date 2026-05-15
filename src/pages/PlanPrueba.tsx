@@ -27,11 +27,17 @@ const initialState: PlanPrueba = {
   metodo: "",
   fecha: "",
   lugar: "",
-  duracion: "",
+  duracion: "00:00:00",
   guion_inicio: "",
   guion_seguimiento: "",
   guion_cierre: "",
 };
+
+const STEPS = [
+  { id: 1, title: "Información General" },
+  { id: 2, title: "Detalles Logísticos" },
+  { id: 3, title: "Guion del Moderador" },
+];
 
 export default function PlanPruebaPage() {
   const { id } = useParams();
@@ -42,6 +48,8 @@ export default function PlanPruebaPage() {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  
+  const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
     if (id) {
@@ -61,7 +69,7 @@ export default function PlanPruebaPage() {
             metodo: data.metodo || "",
             fecha: data.fecha || "",
             lugar: data.lugar || "",
-            duracion: data.duracion || "",
+            duracion: data.duracion || "00:00:00",
             guion_inicio: data.guion_inicio || "",
             guion_seguimiento: data.guion_seguimiento || "",
             guion_cierre: data.guion_cierre || "",
@@ -76,35 +84,44 @@ export default function PlanPruebaPage() {
     }
   }, [id]);
 
-  const validate = (values: PlanPrueba) => {
+  // CORRECCIÓN: Textos de error originales restaurados
+  const validate = (values: PlanPrueba, step?: number) => {
     const newErrors: Partial<Record<keyof PlanPrueba, string>> = {};
-    if (!values.producto || values.producto.length < 3) newErrors.producto = "El producto debe tener al menos 3 caracteres.";
-    if (!values.modulo || values.modulo.length < 3) newErrors.modulo = "El módulo debe tener al menos 3 caracteres.";
-    if (!values.objetivo || values.objetivo.length < 10) newErrors.objetivo = "El objetivo debe tener al menos 10 caracteres.";
-    if (!values.perfilUsuarios || values.perfilUsuarios.length < 3) newErrors.perfilUsuarios = "El perfil de usuarios es obligatorio.";
-    if (!values.metodo || values.metodo.length < 3) newErrors.metodo = "El método es obligatorio.";
-    if (!values.fecha) {
-      newErrors.fecha = "La fecha es obligatoria.";
-    } else {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const inputDate = new Date(values.fecha);
-      if (inputDate < today && !editMode) {
-        newErrors.fecha = "La fecha no puede ser anterior a hoy.";
+    
+    if (step === 1 || step === undefined) {
+      if (!values.producto || values.producto.length < 3) newErrors.producto = "El producto debe tener al menos 3 caracteres.";
+      if (!values.modulo || values.modulo.length < 3) newErrors.modulo = "El módulo debe tener al menos 3 caracteres.";
+      if (!values.objetivo || values.objetivo.length < 10) newErrors.objetivo = "El objetivo debe tener al menos 10 caracteres.";
+      if (!values.perfilUsuarios || values.perfilUsuarios.length < 3) newErrors.perfilUsuarios = "El perfil de usuarios es obligatorio.";
+      if (!values.metodo || values.metodo.length < 3) newErrors.metodo = "El método es obligatorio.";
+    }
+    
+    if (step === 2 || step === undefined) {
+      if (!values.fecha) {
+        newErrors.fecha = "La fecha es obligatoria.";
+      } else {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const inputDate = new Date(values.fecha);
+        if (inputDate < today && !editMode) {
+          newErrors.fecha = "La fecha no puede ser anterior a hoy.";
+        }
+      }
+      if (!values.lugar || values.lugar.length < 3) newErrors.lugar = "El lugar es obligatorio.";
+      if (!/^\d{2}:\d{2}:\d{2}$/.test(values.duracion)) {
+        newErrors.duracion = "La duración debe tener el formato hh:mm:ss";
+      } else {
+        const [h, m, s] = values.duracion.split(":").map(Number);
+        if (h === 0 && m === 0 && s === 0) newErrors.duracion = "La duración no puede ser 00:00:00";
       }
     }
-    if (!values.lugar || values.lugar.length < 3) newErrors.lugar = "El lugar es obligatorio.";
     
-    if (!/^\d{2}:\d{2}:\d{2}$/.test(values.duracion)) {
-      newErrors.duracion = "La duración debe tener el formato hh:mm:ss";
-    } else {
-      const [h, m, s] = values.duracion.split(":").map(Number);
-      if (h === 0 && m === 0 && s === 0) newErrors.duracion = "La duración no puede ser 00:00:00";
+    if (step === 3 || step === undefined) {
+      if (!values.guion_inicio || values.guion_inicio.length < 5) newErrors.guion_inicio = "Obligatorio (mínimo 5 caracteres).";
+      if (!values.guion_seguimiento || values.guion_seguimiento.length < 5) newErrors.guion_seguimiento = "Obligatorio (mínimo 5 caracteres).";
+      if (!values.guion_cierre || values.guion_cierre.length < 5) newErrors.guion_cierre = "Obligatorio (mínimo 5 caracteres).";
     }
-    
-    if (!values.guion_inicio || values.guion_inicio.length < 5) newErrors.guion_inicio = "Obligatorio (mínimo 5 caracteres).";
-    if (!values.guion_seguimiento || values.guion_seguimiento.length < 5) newErrors.guion_seguimiento = "Obligatorio (mínimo 5 caracteres).";
-    if (!values.guion_cierre || values.guion_cierre.length < 5) newErrors.guion_cierre = "Obligatorio (mínimo 5 caracteres).";
+
     return newErrors;
   };
 
@@ -125,17 +142,33 @@ export default function PlanPruebaPage() {
     setErrors((prev) => ({ ...prev, duracion: undefined }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNextStep = () => {
+    const stepErrors = validate(form, currentStep);
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      return; 
+    }
+    
+    setErrors({});
+    setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+    window.scrollTo({ top: 0, behavior: "smooth" }); 
+  };
+
+  const handlePrevStep = () => {
+    setErrors({});
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
     setFeedback("");
+    
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      const firstErrorField = Object.keys(validationErrors)[0];
-      const element = document.getElementById(firstErrorField);
-      if (element) element.focus();
       return;
     }
+    
     setLoading(true);
     const safeForm = {
       producto: form.producto,
@@ -176,7 +209,6 @@ export default function PlanPruebaPage() {
         if (editMode) {
           navigate("/planes-prueba", { state: { feedback: "¡Plan actualizado correctamente!" } });
         } else {
-          // Ahora te envía directamente a la lista de tareas del plan
           navigate(`/planes-prueba/${newPlanId}/tareas`, { 
             state: { feedback: "¡Plan guardado correctamente! Ya puedes gestionar las tareas de este plan." } 
           });
@@ -189,11 +221,29 @@ export default function PlanPruebaPage() {
     }
   };
 
+  const progressPercentage = (currentStep / STEPS.length) * 100;
+
   return (
     <div className="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-sm border border-gray-200 mt-10">
       <h1 className="text-2xl font-bold text-blue-700 mb-6">
         {editMode ? "Editar Plan de Prueba" : "Nuevo Plan de Prueba"}
       </h1>
+
+      <div className="mb-8">
+        <div className="flex justify-between mb-2">
+          {STEPS.map((step) => (
+            <span key={step.id} className={`text-sm font-semibold ${currentStep >= step.id ? 'text-blue-700' : 'text-gray-400'}`}>
+              Paso {step.id}: {step.title}
+            </span>
+          ))}
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div 
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+            style={{ width: `${progressPercentage}%` }}
+          ></div>
+        </div>
+      </div>
 
       {feedback && (
         <div 
@@ -209,124 +259,168 @@ export default function PlanPruebaPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AccessibleInput
-            id="producto" name="producto" label="Producto:"
-            value={form.producto} onChange={handleChange} error={errors.producto}
-            placeholder="Ej: Sistema ventas" required
-          />
-          <AccessibleInput
-            id="modulo" name="modulo" label="Módulo evaluado:"
-            value={form.modulo} onChange={handleChange} error={errors.modulo}
-            placeholder="Ej: Inventario" required
-          />
-        </div>
-
-        <AccessibleTextarea
-          id="objetivo" name="objetivo" label="Objetivo de la prueba:"
-          value={form.objetivo} onChange={handleChange} error={errors.objetivo}
-          placeholder="Describe el objetivo principal..." required rows={3}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AccessibleInput
-            id="perfilUsuarios" name="perfilUsuarios" label="Perfil de usuarios:"
-            value={form.perfilUsuarios} onChange={handleChange} error={errors.perfilUsuarios}
-            placeholder="Ej: Estudiantes universitarios" required
-          />
-          <AccessibleInput
-            id="metodo" name="metodo" label="Método:"
-            value={form.metodo} onChange={handleChange} error={errors.metodo}
-            placeholder="Ej: Moderado remoto" required
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AccessibleInput
-            id="fecha" name="fecha" type="date" label="Fecha programada:"
-            value={form.fecha} onChange={handleChange} error={errors.fecha}
-            min={new Date().toISOString().split('T')[0]} required
-          />
-          <AccessibleInput
-            id="lugar" name="lugar" label="Lugar o Canal:"
-            value={form.lugar} onChange={handleChange} error={errors.lugar}
-            placeholder="Ej: Zoom-Online o Lab 1-Presencial" required
-          />
-        </div>
-
-        <div className="flex flex-col mb-4">
-          <label className="mb-1 text-sm font-semibold text-gray-800">
-            Duración estimada (hh:mm:ss):
-          </label>
-          <div className="flex items-center gap-2">
-            <select
-              value={form.duracion.split(":")[0] || "00"}
-              onChange={e => handleDurationChange('h', e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {[...Array(13)].map((_, i) => (
-                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-              ))}
-            </select>
-            <span className="font-bold text-gray-500">:</span>
-            <select
-              value={form.duracion.split(":")[1] || "00"}
-              onChange={e => handleDurationChange('m', e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {[...Array(60)].map((_, i) => (
-                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-              ))}
-            </select>
-            <span className="font-bold text-gray-500">:</span>
-            <select
-              value={form.duracion.split(":")[2] || "00"}
-              onChange={e => handleDurationChange('s', e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {[...Array(60)].map((_, i) => (
-                <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
-              ))}
-            </select>
+      <form onSubmit={(e) => e.preventDefault()} noValidate className="space-y-6">
+        
+        {currentStep === 1 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AccessibleInput
+                id="producto" name="producto" label="Producto (mín. 3 caracteres):"
+                value={form.producto} onChange={handleChange} error={errors.producto}
+                placeholder="Ej: Sistema ventas" required
+              />
+              <AccessibleInput
+                id="modulo" name="modulo" label="Módulo evaluado (mín. 3 caracteres):"
+                value={form.modulo} onChange={handleChange} error={errors.modulo}
+                placeholder="Ej: Inventario" required
+              />
+            </div>
+            <AccessibleTextarea
+              id="objetivo" name="objetivo" label="Objetivo de la prueba (mín. 10 caracteres):"
+              value={form.objetivo} onChange={handleChange} error={errors.objetivo}
+              placeholder="Describe el objetivo principal..." required rows={3}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AccessibleInput
+                id="perfilUsuarios" name="perfilUsuarios" label="Perfil de usuarios:"
+                value={form.perfilUsuarios} onChange={handleChange} error={errors.perfilUsuarios}
+                placeholder="Ej: Estudiantes universitarios" required
+              />
+              <AccessibleInput
+                id="metodo" name="metodo" label="Método:"
+                value={form.metodo} onChange={handleChange} error={errors.metodo}
+                placeholder="Ej: Moderado remoto" required
+              />
+            </div>
           </div>
-          {errors.duracion && <span className="mt-1 text-sm text-red-600 font-medium">{errors.duracion}</span>}
-        </div>
+        )}
 
-        <div className="pt-4 border-t border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Guion del Moderador (Borrador Inicial)</h3>
-          <AccessibleTextarea
-            id="guion_inicio" name="guion_inicio" label="Guion de inicio:"
-            value={form.guion_inicio} onChange={handleChange} error={errors.guion_inicio}
-            placeholder="Instrucciones iniciales..." required rows={2}
-          />
-          <AccessibleTextarea
-            id="guion_seguimiento" name="guion_seguimiento" label="Guion de seguimiento:"
-            value={form.guion_seguimiento} onChange={handleChange} error={errors.guion_seguimiento}
-            placeholder="Preguntas durante la prueba..." required rows={2}
-          />
-          <AccessibleTextarea
-            id="guion_cierre" name="guion_cierre" label="Guion de cierre:"
-            value={form.guion_cierre} onChange={handleChange} error={errors.guion_cierre}
-            placeholder="Agradecimientos y preguntas finales..." required rows={2}
-          />
-        </div>
+        {currentStep === 2 && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AccessibleInput
+                id="fecha" name="fecha" type="date" label="Fecha programada:"
+                value={form.fecha} onChange={handleChange} error={errors.fecha}
+                min={new Date().toISOString().split('T')[0]} required
+              />
+              <AccessibleInput
+                id="lugar" name="lugar" label="Lugar o Canal:"
+                value={form.lugar} onChange={handleChange} error={errors.lugar}
+                placeholder="Ej: Zoom-Online o Lab 1-Presencial" required
+              />
+            </div>
+            <div className="flex flex-col mb-4">
+              <label className="mb-1 text-sm font-semibold text-gray-800">
+                Duración estimada (hh:mm:ss):
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={form.duracion.split(":")[0] || "00"}
+                  onChange={e => handleDurationChange('h', e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {[...Array(13)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+                  ))}
+                </select>
+                <span className="font-bold text-gray-500">:</span>
+                <select
+                  value={form.duracion.split(":")[1] || "00"}
+                  onChange={e => handleDurationChange('m', e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {[...Array(60)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+                  ))}
+                </select>
+                <span className="font-bold text-gray-500">:</span>
+                <select
+                  value={form.duracion.split(":")[2] || "00"}
+                  onChange={e => handleDurationChange('s', e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {[...Array(60)].map((_, i) => (
+                    <option key={i} value={i.toString().padStart(2, '0')}>{i.toString().padStart(2, '0')}</option>
+                  ))}
+                </select>
+              </div>
+              {errors.duracion && <span className="mt-1 text-sm text-red-600 font-medium">{errors.duracion}</span>}
+            </div>
+          </div>
+        )}
 
-        <div className="flex gap-4 pt-4 border-t border-gray-100">
-          <button 
-            type="button" 
-            onClick={() => setShowCancelModal(true)}
-            className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-300"
-          >
-            Cancelar
-          </button>
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-blue-300 disabled:opacity-50"
-          >
-            {loading ? "Guardando..." : "Guardar Plan de Prueba"}
-          </button>
+        {currentStep === 3 && (
+          <div className="space-y-6 animate-fadeIn">
+            
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start shadow-sm mt-2">
+              <span className="text-2xl mt-1">💡</span>
+              <div>
+                <h4 className="font-bold text-blue-800 text-sm">Recomendación para tu Guion</h4>
+                <p className="text-blue-600 text-sm mt-1 leading-relaxed">
+                  Al igual que al redactar tareas, mantén un <strong>lenguaje neutral</strong> en tus guiones. 
+                  Asegúrate de explicarle al participante que estás evaluando el sistema, no a ellos. Esto reduce la ansiedad y genera confianza desde la primera impresión.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Guion del Moderador (Borrador Inicial)</h3>
+              <AccessibleTextarea
+                id="guion_inicio" name="guion_inicio" label="Guion de inicio (mín. 5 caracteres):"
+                value={form.guion_inicio} onChange={handleChange} error={errors.guion_inicio}
+                placeholder="Instrucciones iniciales..." required rows={2}
+              />
+              <AccessibleTextarea
+                id="guion_seguimiento" name="guion_seguimiento" label="Guion de seguimiento (mín. 5 caracteres):"
+                value={form.guion_seguimiento} onChange={handleChange} error={errors.guion_seguimiento}
+                placeholder="Preguntas durante la prueba..." required rows={2}
+              />
+              <AccessibleTextarea
+                id="guion_cierre" name="guion_cierre" label="Guion de cierre (mín. 5 caracteres):"
+                value={form.guion_cierre} onChange={handleChange} error={errors.guion_cierre}
+                placeholder="Agradecimientos y preguntas finales..." required rows={2}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-4 pt-6 border-t border-gray-100 mt-8">
+          {currentStep === 1 ? (
+             <button 
+               type="button" 
+               onClick={() => setShowCancelModal(true)}
+               className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-300"
+             >
+               Cancelar
+             </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={handlePrevStep}
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-gray-300"
+            >
+              Atrás
+            </button>
+          )}
+
+          {currentStep < STEPS.length ? (
+             <button 
+               type="button" 
+               onClick={handleNextStep}
+               className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-blue-300"
+             >
+               Siguiente Paso
+             </button>
+          ) : (
+             <button 
+               type="button" 
+               onClick={handleSubmit} 
+               disabled={loading} 
+               className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors focus:ring-4 focus:ring-green-300 disabled:opacity-50"
+             >
+               {loading ? "Guardando..." : "Guardar Plan de Prueba"}
+             </button>
+          )}
         </div>
       </form>
       
