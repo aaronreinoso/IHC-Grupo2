@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false); // ERROR 2: Estado de error
   const [showHelp, setShowHelp] = useState(false);
   
   // Estados para las métricas generales
@@ -30,10 +31,13 @@ export default function Dashboard() {
 
   const cargarDatosDashboard = async () => {
     setLoading(true);
+    setFetchError(false); // Reiniciar error al intentar de nuevo
 
     try {
       // 1. Obtener conteos generales
-      const { count: countPlanes } = await supabase.from('pruebas_usabilidad').select('*', { count: 'exact', head: true });
+      const { count: countPlanes, error: err1 } = await supabase.from('pruebas_usabilidad').select('*', { count: 'exact', head: true });
+      if (err1) throw err1; // Forzamos el salto al catch si hay error de red
+      
       const { count: countParticipantes } = await supabase.from('participantes').select('*', { count: 'exact', head: true });
       const { count: countTareas } = await supabase.from('tareas').select('*', { count: 'exact', head: true });
       const { count: countHallazgos } = await supabase.from('hallazgos').select('*', { count: 'exact', head: true });
@@ -79,18 +83,47 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('Error cargando el dashboard:', error);
+      setFetchError(true); // ERROR 2: Activamos la vista de error
     } finally {
       setLoading(false);
     }
   };
 
+  // ERROR 2: Implementación de Skeletons (Visibilidad del estado)
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="max-w-7xl mx-auto space-y-8 animate-pulse">
+        <div className="h-10 bg-gray-200 rounded w-1/3 mb-4"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => <div key={i} className="bg-gray-100 h-24 rounded-xl"></div>)}
+        </div>
+        <div className="h-64 bg-gray-100 rounded-xl mt-8"></div>
       </div>
     );
   }
+
+  // ERROR 2: Mensaje de error con botón de reintento
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-red-50 rounded-xl border border-red-200">
+        <span className="text-4xl mb-4">🔌</span>
+        <h2 className="text-xl font-bold text-red-700">Error de conexión</h2>
+        <p className="text-red-600 mb-4">No se pudieron cargar las métricas desde Supabase.</p>
+        <button onClick={cargarDatosDashboard} className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+          Reintentar conexión
+        </button>
+      </div>
+    );
+  }
+
+  // ERROR 9: Colores semánticos dinámicos para la tasa de éxito
+  const colorExito = usabilidad.tasaExito >= 80 ? 'text-emerald-600 bg-emerald-50' : 
+                     usabilidad.tasaExito >= 50 ? 'text-amber-600 bg-amber-50' : 
+                     'text-rose-600 bg-rose-50';
+
+  const textoExitoColor = usabilidad.tasaExito >= 80 ? 'text-emerald-600' : 
+                          usabilidad.tasaExito >= 50 ? 'text-amber-600' : 
+                          'text-rose-600';
 
   
   return (
@@ -146,20 +179,22 @@ export default function Dashboard() {
           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-2xl">👥</div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+        {/* ERROR 9: Tarjeta de Éxito con color semántico */}
+        <div className={`p-6 rounded-xl border shadow-sm flex items-center justify-between ${colorExito.replace('text', 'border')}`}>
           <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Tasa de Éxito</p>
-            <p className="text-3xl font-bold text-indigo-600 mt-1">{usabilidad.tasaExito}%</p>
+            <p className="text-sm font-semibold text-gray-700 uppercase">Tasa de Éxito</p>
+            <p className={`text-3xl font-bold mt-1 ${textoExitoColor}`}>{usabilidad.tasaExito}%</p>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg text-2xl">🎯</div>
+          <div className={`p-3 rounded-lg text-2xl ${colorExito}`}>🎯</div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+        {/* ERROR 9: Tarjeta de Errores en Rojo (Alerta visual) */}
+        <div className="bg-rose-50 p-6 rounded-xl border border-rose-100 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-gray-500 uppercase">Total Errores</p>
+            <p className="text-sm font-semibold text-rose-800 uppercase">Total Errores</p>
             <p className="text-3xl font-bold text-rose-600 mt-1">{usabilidad.totalErrores}</p>
           </div>
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-lg text-2xl">⚠️</div>
+          <div className="p-3 bg-rose-100 text-rose-700 rounded-lg text-2xl">⚠️</div>
         </div>
       </div>
 
