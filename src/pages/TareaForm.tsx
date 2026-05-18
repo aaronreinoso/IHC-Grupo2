@@ -653,7 +653,7 @@ const TareaForm: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-2/3 py-3 px-4 font-bold text-white bg-blue-700 hover:bg-blue-800 rounded-xl shadow-md transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full sm:w-2/3 py-3 px-4 font-bold text-white bg-blue-700 hover:bg-blue-800 rounded-xl shadow-md transition-colors disabled:bg-blue-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && (
               <span
