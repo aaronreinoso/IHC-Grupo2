@@ -46,7 +46,11 @@ export default function AuthGuard() {
 
     if (requestedBypass) {
       try {
-        window.localStorage.setItem(DEV_BYPASS_KEY, "1");
+        window.sessionStorage.setItem(DEV_BYPASS_KEY, "1");
+      } catch (_) {}
+
+      try {
+        window.localStorage.removeItem(DEV_BYPASS_KEY);
       } catch (_) {}
 
       setBypassActive(true);
@@ -55,7 +59,7 @@ export default function AuthGuard() {
       return;
     }
 
-    const storedBypass = window.localStorage.getItem(DEV_BYPASS_KEY) === "1";
+    const storedBypass = window.sessionStorage.getItem(DEV_BYPASS_KEY) === "1";
     if (storedBypass) {
       setBypassActive(true);
       setLoading(false);

@@ -122,6 +122,7 @@ export default function Layout() {
 
     try {
       window.localStorage.removeItem(DEV_BYPASS_KEY);
+      window.sessionStorage.removeItem(DEV_BYPASS_KEY);
       await supabase.auth.signOut();
     } finally {
       setSigningOut(false);
