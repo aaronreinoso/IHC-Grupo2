@@ -5,9 +5,18 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  closeOnBackdropClick?: boolean;
+  showCloseButton?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({
+  open,
+  onClose,
+  title,
+  children,
+  closeOnBackdropClick = true,
+  showCloseButton = true,
+}) => {
   if (!open) return null;
   return (
     <div
@@ -27,7 +36,7 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
         zIndex: 1000,
         padding: "20px" // Margen de seguridad para pantallas pequeñas
       }}
-      onClick={onClose}
+      onClick={closeOnBackdropClick ? onClose : undefined}
     >
       <div
         style={{
@@ -44,23 +53,25 @@ const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
         }}
         onClick={e => e.stopPropagation()}
       >
-        <button
-          aria-label="Cerrar"
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            top: 16,
-            right: 16,
-            background: "none",
-            border: "none",
-            fontSize: 22,
-            cursor: "pointer",
-            color: "#888",
-            zIndex: 10 // Asegurar que el botón esté por encima del contenido
-          }}
-        >
-          ×
-        </button>
+        {showCloseButton && (
+          <button
+            aria-label="Cerrar"
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              background: "none",
+              border: "none",
+              fontSize: 22,
+              cursor: "pointer",
+              color: "#888",
+              zIndex: 10 // Asegurar que el botón esté por encima del contenido
+            }}
+          >
+            ×
+          </button>
+        )}
         {title && <h2 style={{ marginTop: 0, marginBottom: "20px" }}>{title}</h2>}
         {children}
       </div>

@@ -148,10 +148,38 @@ export default function Dashboard() {
   });
 
   const [planesRecientes, setPlanesRecientes] = useState<any[]>([]);
+  const [progresoPorPlan, setProgresoPorPlan] = useState<Record<string, { exitosas: number; total: number; porcentaje: number }>>({});
 
   useEffect(() => {
     cargarDatosDashboard();
   }, []);
+
+  const cargarProgresoPorPlan = async (planes: any[]) => {
+    const progreso: Record<string, { exitosas: number; total: number; porcentaje: number }> = {};
+    
+    for (const plan of planes) {
+      const { count: countTareas } = await supabase
+        .from('tareas')
+        .select('*', { count: 'exact', head: true })
+        .eq('prueba_id', plan.id);
+      
+      const { data: obsExitosas } = await supabase
+        .from('observaciones')
+        .select('*')
+        .eq('exito', true)
+        .in('tarea_id', 
+          (await supabase.from('tareas').select('id').eq('prueba_id', plan.id)).data?.map((t: any) => t.id) || []
+        );
+      
+      const total = countTareas || 0;
+      const exitosas = obsExitosas?.length || 0;
+      const porcentaje = total > 0 ? Math.round((exitosas / total) * 100) : 0;
+      
+      progreso[plan.id] = { exitosas, total, porcentaje };
+    }
+    
+    setProgresoPorPlan(progreso);
+  };
 
   const cargarDatosDashboard = async () => {
     setLoading(true);
@@ -215,7 +243,10 @@ export default function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(4);
 
-      if (recientes) setPlanesRecientes(recientes);
+      if (recientes) {
+        setPlanesRecientes(recientes);
+        await cargarProgresoPorPlan(recientes);
+      }
     } catch (error) {
       console.error("Error cargando el dashboard:", error);
     } finally {
@@ -587,31 +618,49 @@ export default function Dashboard() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-100">
-                  {planesRecientes.map((plan) => (
-                    <tr
-                      key={plan.id}
-                      className="transition-colors hover:bg-gray-50"
-                    >
-                      <td className="py-4 text-sm font-bold text-gray-900">
-                        {plan.producto}
-                      </td>
-
-                      <td
-                        className="max-w-xs truncate py-4 text-sm text-gray-700"
-                        title={plan.objetivo}
+                  {planesRecientes.map((plan) => {
+                    const prog = progresoPorPlan[plan.id];
+                    return (
+                      <tr
+                        key={plan.id}
+                        className="transition-colors hover:bg-gray-50"
                       >
-                        {plan.objetivo}
-                      </td>
+                        <td className="py-4 text-sm font-bold text-gray-900">
+                          {plan.producto}
+                        </td>
 
-                      <td className="py-4 text-sm font-semibold text-gray-600">
-                        {new Date(plan.fecha).toLocaleDateString("es-ES", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </td>
-                    </tr>
-                  ))}
+                        <td
+                          className="max-w-xs py-4 text-sm text-gray-700"
+                          title={plan.objetivo}
+                        >
+                          <div className="space-y-1">
+                            <p className="truncate">{plan.objetivo}</p>
+                            {prog && prog.total > 0 && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <div className="h-2 w-24 rounded-full bg-gray-100">
+                                  <div
+                                    className="h-2 rounded-full bg-emerald-500 transition-all duration-500"
+                                    style={{ width: `${prog.porcentaje}%` }}
+                                  />
+                                </div>
+                                <span className="font-semibold text-gray-600">
+                                  {prog.exitosas}/{prog.total} • {prog.porcentaje}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-4 text-sm font-semibold text-gray-600">
+                          {new Date(plan.fecha).toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
