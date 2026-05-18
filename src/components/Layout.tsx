@@ -1,11 +1,21 @@
-import { useState, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import Modal from "./Modal";
+import type { UsuarioPerfil } from "../types/usuario.ts";
+
+const DEV_BYPASS_KEY = "ihc-dev-bypass-auth";
 
 type MenuLink = {
   path: string;
   name: string;
   desc: string;
   icon: React.ReactNode;
+};
+
+type OutletContext = {
+  userProfile: UsuarioPerfil | null;
+  profileLoading: boolean;
 };
 
 interface FloatingLabelProps {
@@ -81,10 +91,44 @@ const FloatingLabel: React.FC<FloatingLabelProps> = ({
   );
 };
 
+const getAvatarFallback = (userProfile: UsuarioPerfil | null) => {
+  const source = userProfile?.nombre || userProfile?.email || "U";
+
+  return (
+    source
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "U"
+  );
+};
+
 export default function Layout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const outletContext = useOutletContext<OutletContext | undefined>();
+  const userProfile = outletContext?.userProfile ?? null;
+  const profileLoading = outletContext?.profileLoading ?? false;
+  const avatarFallback = getAvatarFallback(userProfile);
+  const avatarUrl = userProfile?.avatar_url || "";
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+
+    try {
+      window.localStorage.removeItem(DEV_BYPASS_KEY);
+      await supabase.auth.signOut();
+    } finally {
+      setSigningOut(false);
+      setShowSignOutModal(false);
+      navigate("/login", { replace: true });
+    }
+  };
 
   useEffect(() => {
     setIsMobileOpen(false);
@@ -194,66 +238,84 @@ export default function Layout() {
         `}
         aria-label="Navegación principal"
       >
-        <div
-          className={`
-            flex
-            items-center
-            border-b
-            border-slate-800
-            p-5
-            ${isCollapsed ? "justify-center px-3" : "justify-between"}
-          `}
-        >
+        <div className={`border-b border-slate-800 p-5 ${isCollapsed ? "px-3" : ""}`}>
+          <div className={`flex items-center gap-4 ${isCollapsed ? "justify-center" : "justify-between"}`}>
+            {!isCollapsed && (
+              <div className="min-w-0">
+                <h1 className="whitespace-nowrap text-xl font-bold tracking-wider text-blue-400">
+                  UX Dashboard
+                </h1>
+                <p className="mt-1 whitespace-nowrap text-xs text-slate-400">
+                  Evaluación de Usabilidad
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsCollapsed((prev) => !prev)}
+              className="
+                hidden
+                rounded-xl
+                border-2
+                border-blue-400
+                bg-slate-800
+                p-3
+                text-slate-300
+                transition-colors
+                hover:bg-slate-700
+                hover:text-white
+                focus:outline-none
+                focus:ring-4
+                focus:ring-blue-300
+                md:flex
+              "
+              aria-label={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
+              aria-expanded={!isCollapsed}
+            >
+              <svg
+                className={`h-6 w-6 transition-transform duration-300 ${
+                  isCollapsed ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              </svg>
+            </button>
+          </div>
+
           {!isCollapsed && (
-            <div>
-              <h1 className="whitespace-nowrap text-xl font-bold tracking-wider text-blue-400">
-                UX Dashboard
-              </h1>
-              <p className="mt-1 whitespace-nowrap text-xs text-slate-400">
-                Evaluación de Usabilidad
-              </p>
+            <div className="mt-5 flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-800 ring-1 ring-slate-700">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={userProfile?.nombre || "Avatar de usuario"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-blue-300">{avatarFallback}</span>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {profileLoading ? "Cargando perfil..." : userProfile?.nombre || userProfile?.email || "Usuario autenticado"}
+                </p>
+                <p className="truncate text-xs uppercase tracking-[0.2em] text-slate-500">
+                  {userProfile?.rol || "evaluador"}
+                </p>
+              </div>
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={() => setIsCollapsed((prev) => !prev)}
-            className="
-              hidden
-              rounded-xl
-              border-2
-              border-blue-400
-              bg-slate-800
-              p-3
-              text-slate-300
-              transition-colors
-              hover:bg-slate-700
-              hover:text-white
-              focus:outline-none
-              focus:ring-4
-              focus:ring-blue-300
-              md:flex
-            "
-            aria-label={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-            aria-expanded={!isCollapsed}
-          >
-            <svg
-              className={`h-6 w-6 transition-transform duration-300 ${
-                isCollapsed ? "rotate-180" : ""
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            </svg>
-          </button>
         </div>
 
         <nav className="flex-1 space-y-2 overflow-visible px-4 py-6">
@@ -315,11 +377,38 @@ export default function Layout() {
           ))}
         </nav>
 
-        {!isCollapsed && (
-          <div className="border-t border-slate-800 p-4 text-center text-xs text-slate-500">
-            IHC - Grupo 2
-          </div>
-        )}
+        <div className={`border-t border-slate-800 p-4 ${isCollapsed ? "flex justify-center" : ""}`}>
+          <button
+            type="button"
+            onClick={() => setShowSignOutModal(true)}
+            className={`
+              inline-flex
+              items-center
+              gap-2
+              rounded-lg
+              bg-slate-800
+              px-3
+              py-2
+              text-sm
+              font-semibold
+              text-slate-100
+              transition-colors
+              hover:bg-slate-700
+              ${isCollapsed ? "justify-center" : "w-full justify-center"}
+            `}
+            aria-label="Cerrar sesión"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12h9m0 0-3-3m3 3-3 3" />
+            </svg>
+            {!isCollapsed && <span>Cerrar sesión</span>}
+          </button>
+
+          {!isCollapsed && (
+            <p className="mt-3 text-center text-xs text-slate-500 whitespace-nowrap">IHC - Grupo 2</p>
+          )}
+        </div>
       </aside>
 
       <div className="relative flex h-screen flex-1 flex-col overflow-hidden bg-gray-50">
@@ -357,20 +446,63 @@ export default function Layout() {
             </svg>
           </button>
 
-          <div className="ml-4">
-            <h1 className="text-lg font-bold tracking-tight text-slate-800">
-              UX Dashboard
-            </h1>
-            <p className="text-xs text-gray-500">
-              Evaluación de Usabilidad
-            </p>
+          <div className="ml-4 flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-blue-200">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={userProfile?.nombre || "Avatar de usuario"} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold">{avatarFallback}</span>
+              )}
+            </div>
+
+            <div className="min-w-0">
+              <h1 className="truncate text-lg font-bold tracking-tight text-slate-800">
+                UX Dashboard
+              </h1>
+              <p className="truncate text-xs text-gray-500">
+                {profileLoading ? "Cargando perfil..." : userProfile?.nombre || userProfile?.email || "Usuario"}
+              </p>
+            </div>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <Outlet />
+          <Outlet context={{ userProfile, profileLoading } satisfies OutletContext} />
         </main>
       </div>
+
+      <Modal
+        open={showSignOutModal}
+        onClose={() => {
+          if (!signingOut) {
+            setShowSignOutModal(false);
+          }
+        }}
+        title="Confirmar cierre de sesión"
+      >
+        <p className="mb-6 text-sm leading-6 text-slate-600">
+          ¿Está seguro de cerrar sesión?
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setShowSignOutModal(false)}
+            disabled={signingOut}
+            className="rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {signingOut ? "Cerrando..." : "Aceptar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
