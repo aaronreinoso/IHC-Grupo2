@@ -21,6 +21,7 @@ import TareaForm from './pages/TareaForm';
 import HallazgosMejoras from './pages/HallazgosMejoras';
 import Observaciones from './pages/Observaciones';
 import Dashboard from './pages/Dashboard';
+import AsistenteBacklog from './pages/AsistenteBacklog';
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="planes-prueba" element={<PlanesPruebaList />} />
             <Route path="planes-prueba/nuevo" element={<PlanPrueba />} />
             <Route path="planes-prueba/editar/:id" element={<PlanPrueba />} />
+            <Route path="asistente-backlog" element={<AsistenteBacklog />} />
           </Route>
 
           {/* ==========================================
