@@ -19,6 +19,13 @@ interface Observacion {
 }
 
 const ITEMS_PER_PAGE = 5;
+const DRAFT_STORAGE_KEY = 'obs_draft_form';
+
+interface DraftFormData {
+  comentarios: string;
+  problema: string;
+  mejora: string;
+}
 
 export default function Observaciones() {
   const { planId } = useParams(); 
@@ -46,7 +53,18 @@ export default function Observaciones() {
   const [mejora, setMejora] = useState<string>('');
 
   const [loadingGuardar, setLoadingGuardar] = useState<boolean>(false);
-  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+  
+  const [erroresCampos, setErroresCampos] = useState<Partial<Record<'sesionId' | 'tareaId' | 'tiempo', string>>>({});
+
+  // Autoguardado en localStorage
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const draft: DraftFormData = { comentarios, problema, mejora };
+    try {
+      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } catch (_) {}
+  }, [comentarios, problema, mejora, isModalOpen]);
 
   useEffect(() => {
     if (planId) {
@@ -83,11 +101,41 @@ export default function Observaciones() {
   const resetForm = () => {
     setEditingId(null); setSesionId(''); setTareaId(''); setExito(false);
     setTiempo(''); setErrores(0); setComentarios(''); setProblema('');
-    setSeveridad('Baja'); setMejora(''); setMensaje({ tipo: '', texto: '' });
+    setSeveridad('Baja'); setMejora('');
+    setErroresCampos({});
   };
 
-  const handleOpenModal = () => { resetForm(); setIsModalOpen(true); };
-  const handleCloseModal = () => { setIsModalOpen(false); resetForm(); };
+  const validateObservacion = () => {
+    const errores: typeof erroresCampos = {};
+    if (!sesionId) errores.sesionId = 'El participante es obligatorio.';
+    if (!tareaId) errores.tareaId = 'La tarea es obligatoria.';
+    if (tiempo === '' || Number(tiempo) < 0) {
+      errores.tiempo = 'El tiempo es obligatorio y debe ser mayor o igual a 0.';
+    }
+    setErroresCampos(errores);
+    return { isValid: Object.keys(errores).length === 0, errors: errores };
+  };
+
+  const restoreDraft = () => {
+    try {
+      const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (stored) {
+        const draft: DraftFormData = JSON.parse(stored);
+        setComentarios(draft.comentarios || '');
+        setProblema(draft.problema || '');
+        setMejora(draft.mejora || '');
+      }
+    } catch (_) {}
+  };
+
+  const clearDraft = () => {
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (_) {}
+  };
+
+  const handleOpenModal = () => { resetForm(); restoreDraft(); setIsModalOpen(true); };
+  const handleCloseModal = () => { setIsModalOpen(false); clearDraft(); resetForm(); };
 
   const handleEdit = (obs: Observacion) => {
     resetForm();
@@ -109,10 +157,17 @@ export default function Observaciones() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMensaje({ tipo: '', texto: '' });
-
-    if (Number(tiempo) < 0) { setMensaje({ tipo: 'error', texto: 'El tiempo no puede ser negativo.' }); return; }
-    if (!sesionId || !tareaId || tiempo === '') { setMensaje({ tipo: 'error', texto: 'Por favor, completa los campos obligatorios.' }); return; }
+    const { isValid, errors } = validateObservacion();
+    if (!isValid) {
+      // Focus automático al primer campo con error
+      setTimeout(() => {
+        if (errors.sesionId) document.getElementById('sesion')?.focus();
+        else if (errors.tareaId) document.getElementById('tarea')?.focus();
+        else if (errors.tiempo) document.getElementById('tiempo')?.focus();
+      }, 0);
+      
+      return;
+    }
 
     setLoadingGuardar(true);
     const payload = {
@@ -131,8 +186,8 @@ export default function Observaciones() {
     }
 
     setLoadingGuardar(false);
-    if (error) setMensaje({ tipo: 'error', texto: `Error al ${editingId ? 'actualizar' : 'guardar'}: ` + error.message });
-    else { toast.success(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`); fetchObservaciones(); handleCloseModal(); }
+    if (error) toast.error(`Error al ${editingId ? 'actualizar' : 'guardar'}: ${error.message}`);
+    else { toast.success(`Observación ${editingId ? 'actualizada' : 'registrada'} correctamente.`); clearDraft(); fetchObservaciones(); handleCloseModal(); }
   };
 
   const filteredObservaciones = useMemo(() => {
@@ -220,9 +275,17 @@ export default function Observaciones() {
       <ConfirmDeleteModal isOpen={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={confirmDelete} itemName="esta observación" />
 
       {isModalOpen && (
-         <Modal open={isModalOpen} onClose={handleCloseModal} title={editingId ? "Editar Observación" : "Registrar Nueva Observación"}>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mensaje.texto && (<div className={`p-3 rounded-lg text-sm font-semibold text-center ${mensaje.tipo === "error" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>{mensaje.texto}</div>)}
+         <Modal
+           open={isModalOpen}
+           onClose={handleCloseModal}
+           title={editingId ? "Editar Observación" : "Registrar Nueva Observación"}
+           closeOnBackdropClick={false}
+           showCloseButton={false}
+         >
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                Para salir sin perder lo que escribiste, usa el botón <strong>Cancelar</strong>. El modal no se cierra al hacer clic fuera para evitar pérdida accidental de datos.
+              </div>
 
               {sesiones.length === 0 && (
                   <div className="p-3 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-md text-sm mb-4">
@@ -236,19 +299,19 @@ export default function Observaciones() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <AccessibleSelect id="sesion" label="Participante (Sesión) *" value={sesionId} onChange={(e) => setSesionId(e.target.value)} required>
+                <AccessibleSelect id="sesion" label="Participante (Sesión) *" value={sesionId} onChange={(e) => { setSesionId(e.target.value); setErroresCampos(prev => ({ ...prev, sesionId: undefined })); }} error={erroresCampos.sesionId}>
                   <option value="">Seleccione...</option>
                   {sesiones.map(s => (<option key={s.id} value={s.id}>{s.participantes?.nombre || 'Sesión sin nombre'}</option>))}
                 </AccessibleSelect>
                 
-                <AccessibleSelect id="tarea" label="Tarea Evaluada *" value={tareaId} onChange={(e) => setTareaId(e.target.value)} required>
+                <AccessibleSelect id="tarea" label="Tarea Evaluada *" value={tareaId} onChange={(e) => { setTareaId(e.target.value); setErroresCampos(prev => ({ ...prev, tareaId: undefined })); }} error={erroresCampos.tareaId}>
                   <option value="">Seleccione...</option>
                   {tareas.map(t => (<option key={t.id} value={t.id}>{t.escenario}</option>))}
                 </AccessibleSelect>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <AccessibleInput id="tiempo" name="tiempo" label="Tiempo (seg) *" type="number" value={tiempo} onChange={(e) => setTiempo(Number(e.target.value))} placeholder="Ej: 120" required min="0" />
+                <AccessibleInput id="tiempo" name="tiempo" label="Tiempo (seg) *" type="number" value={tiempo} onChange={(e) => { const value = e.target.value; setTiempo(value === '' ? '' : Number(value)); setErroresCampos(prev => ({ ...prev, tiempo: undefined })); }} error={erroresCampos.tiempo} placeholder="Ej: 120" min="0" />
                 <AccessibleInput id="errores" name="errores" label="Cant. Errores" type="number" value={errores} onChange={(e) => setErrores(Number(e.target.value))} placeholder="Ej: 2" min="0" />
                 
                 <div className="flex flex-col mb-4 pt-1">
@@ -271,9 +334,12 @@ export default function Observaciones() {
               <AccessibleInput id="mejora" name="mejora" label="Mejora Propuesta" value={mejora} onChange={(e) => setMejora(e.target.value)} placeholder="Ej: Añadir un acceso directo a la sección de configuración en el menú principal" />
 
               <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
-                <button type="button" onClick={handleCloseModal} className="px-5 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50">Cancelar</button>
-                <button type="submit" disabled={loadingGuardar || sesiones.length === 0 || tareas.length === 0} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50">
-                    {loadingGuardar ? 'Guardando...' : editingId ? 'Actualizar' : 'Guardar'}
+                <button type="button" onClick={handleCloseModal} disabled={loadingGuardar} className="px-5 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">Cancelar</button>
+                <button type="submit" disabled={loadingGuardar} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                    {loadingGuardar && (
+                      <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true" />
+                    )}
+                    {loadingGuardar ? (editingId ? 'Actualizando...' : 'Guardando...') : editingId ? 'Actualizar' : 'Guardar'}
                 </button>
               </div>
             </form>

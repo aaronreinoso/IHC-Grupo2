@@ -9,4 +9,12 @@ export default defineConfig({
     tailwindcss(),
   ],
   base: '/IHC-Grupo2/',
+  server: {
+    hmr: {
+      overlay: false,
+    },
+    watch: {
+      usePolling: true,
+    },
+  },
 })
