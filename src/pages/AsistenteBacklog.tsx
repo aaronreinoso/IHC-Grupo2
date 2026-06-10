@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { supabase } from "../supabaseClient";
+import type { PlanPruebaShort, PruebaUsabilidad, Observacion } from "../types/plan";
 
 /* ============================================================================
    AsistenteBacklog.tsx · Google Gemini (GRATIS) · análisis automático del repo
@@ -33,6 +35,79 @@ function buildSnapshot(): string {
   }
   out += "</files>\n";
   return out;
+}
+
+async function fetchPlanData(planId: string) {
+  const { data: plan } = await supabase
+    .from("pruebas_usabilidad")
+    .select("*")
+    .eq("id", planId)
+    .single();
+
+  const { data: observations } = await supabase
+    .from("observaciones")
+    .select("*, tareas!inner(*)")
+    .eq("tareas.prueba_id", planId);
+
+  return { 
+    plan: plan as PruebaUsabilidad | null, 
+    observations: (observations || []) as (Observacion & { tareas: { escenario: string } })[] 
+  };
+}
+
+function buildObservationsPrompt(
+  modulo: string,
+  numSprints: string,
+  escala: string,
+  plan: PruebaUsabilidad,
+  observations: (Observacion & { tareas: { escenario: string } })[]
+): string {
+  const obsText = observations
+    .map(
+      (o, i) =>
+        `Hallazgo #${i + 1}:
+- Tarea: ${o.tareas?.escenario || "N/A"}
+- Éxito: ${o.exito ? "Sí" : "No"}
+- Tiempo: ${o.tiempo_segundos}s | Errores: ${o.errores}
+- Problema: ${o.problema_detectado}
+- Severidad: ${o.severidad}
+- Mejora prop.: ${o.mejora_propuesta || "N/A"}
+- Comentarios: ${o.comentarios || "N/A"}`
+    )
+    .join("\n\n");
+
+  return `Actúa como evaluador experto en usabilidad y Scrum Master. Te paso los resultados de una prueba de usabilidad real.
+    PLAN DE PRUEBA:
+    - Producto: ${plan.producto}
+    - Objetivo: ${plan.objetivo}
+    - Metodología: ${plan.metodologia}
+
+    HALLAZGOS DETECTADOS:
+    ${obsText}
+
+    PASO 1 (interno): analiza los hallazgos contra ISO 9241-11 (Eficacia, Eficiencia, Satisfacción) y prioriza los problemas de severidad "Crítica" y "Alta".
+    PASO 2: genera un SPRINT BACKLOG profesional para el "${modulo}".
+
+    REQUISITOS DEL BACKLOG:
+    - Distribuye el trabajo en ${numSprints} sprint(s). Escala de estimación: ${escala}.
+    - Agrupa en ÉPICAS coherentes basadas en los problemas encontrados.
+    - Cada historia: "Como [rol], quiero [meta], para [beneficio]", con criterios de aceptación (2-3 verificables), estimación, prioridad y sprint.
+    - Cada historia debe mitigar directamente uno o más de los hallazgos citados.
+    - Inicia con una nota de contexto ISO 9241-11 de MÁXIMO 2 frases sobre el estado de usabilidad del producto.
+    - Cierra con "## Resumen por sprint".
+
+    ESTRUCTURA OBLIGATORIA:
+    # Sprint Backlog — ${modulo}
+    (2 frases de contexto ISO 9241-11)
+    ## Épica 1: <nombre>
+    ### HU-01 — <título>
+    - **Historia:** Como ..., quiero ..., para ...
+    - **Criterios de aceptación:** ...
+    - **Estimación:** X pts · **Prioridad:** Alta/Media/Baja · **Sprint:** N
+    - **Referencia hallazgo:** Hallazgo #X
+    ## Resumen por sprint
+
+    FORMATO: devuelve ÚNICAMENTE el Sprint Backlog en Markdown válido en español (sin bloques \`\`\`). No muestres la lista de hallazgos por separado.`;
 }
 
 /* ---- llamada a Gemini ---- */
@@ -116,6 +191,9 @@ function renderMarkdown(md: string) {
 }
 
 export default function AsistenteBacklog() {
+  const [sourceMode, setSourceMode] = useState<"repo" | "plan">("repo");
+  const [planes, setPlanes] = useState<PlanPruebaShort[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
   const [modulo, setModulo] = useState("Módulo de IA de Usabilidad");
   const [numSprints, setNumSprints] = useState("3");
   const [escala, setEscala] = useState("Fibonacci (1,2,3,5,8,13)");
@@ -124,16 +202,33 @@ export default function AsistenteBacklog() {
   const [backlog, setBacklog] = useState("");
   const resultRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    async function fetchPlanes() {
+      const { data } = await supabase
+        .from("pruebas_usabilidad")
+        .select("id, producto, duracion")
+        .order("created_at", { ascending: false });
+      if (data) setPlanes(data as PlanPruebaShort[]);
+    }
+    fetchPlanes();
+  }, []);
+
   const numArchivos = useMemo(() => Object.keys(sourceModules).length, []);
 
   async function generar() {
-    if (!apiKey.trim()) return toast.error("Falta la API key (defínela en .env.local o pégala abajo).");
-    if (numArchivos === 0) return toast.error("No se encontró código fuente embebido.");
+    if (!apiKey.trim())
+      return toast.error("Falta la API key (defínela en .env.local o pégala abajo).");
 
     setLoading(true);
     setBacklog("");
-    const snapshot = buildSnapshot().slice(0, MAX_CODE_CHARS);
-    const prompt = `Actúa como evaluador experto en usabilidad y Scrum Master. Te paso el código fuente de una aplicación React.
+
+    try {
+      let prompt = "";
+
+      if (sourceMode === "repo") {
+        if (numArchivos === 0) throw new Error("No se encontró código fuente embebido.");
+        const snapshot = buildSnapshot().slice(0, MAX_CODE_CHARS);
+        prompt = `Actúa como evaluador experto en usabilidad y Scrum Master. Te paso el código fuente de una aplicación React.
     PASO 1 (interno, no lo muestres): analiza el código contra ISO 9241-11, WCAG 2.1 AA, las 10 heurísticas de Nielsen y principios de Diseño Centrado en el Usuario, detectando problemas REALES y concretos (cita archivos).
     PASO 2: a partir de esos hallazgos, genera DIRECTAMENTE un SPRINT BACKLOG profesional para el "${modulo}".
     REQUISITOS DEL BACKLOG:
@@ -159,8 +254,16 @@ export default function AsistenteBacklog() {
 
     CÓDIGO FUENTE DEL PROYECTO:
     ${snapshot}`;
+      } else {
+        if (!selectedPlanId) throw new Error("Selecciona un Plan de Prueba primero.");
+        const { plan, observations } = await fetchPlanData(selectedPlanId);
+        if (!plan) throw new Error("No se pudo obtener la información del plan.");
+        if (!observations || observations.length === 0)
+          throw new Error("El plan seleccionado no tiene observaciones registradas.");
 
-    try {
+        prompt = buildObservationsPrompt(modulo || plan.producto, numSprints, escala, plan, observations);
+      }
+
       const text = await callGemini(apiKey, prompt);
       setBacklog(text);
       toast.success("Sprint backlog generado");
@@ -187,6 +290,11 @@ export default function AsistenteBacklog() {
     toast.success("Descargando .md");
   }
 
+  function descargarPDF() {
+    window.print();
+    toast.success("Abriendo diálogo de impresión...");
+  }
+
   async function copiar() {
     try {
       await navigator.clipboard.writeText(backlog);
@@ -203,7 +311,7 @@ export default function AsistenteBacklog() {
     <div className="mx-auto max-w-4xl p-6">
       <Toaster position="top-right" />
 
-      <header className="mb-6">
+      <header className="mb-6 no-print">
         <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-blue-700">
           Asistente IA · Usabilidad
         </span>
@@ -220,19 +328,74 @@ export default function AsistenteBacklog() {
         </p>
       </header>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm no-print">
+        {/* Selector de modo */}
+        <div className="mb-6 flex rounded-xl border-2 border-gray-100 bg-gray-50 p-1">
+          <button
+            onClick={() => setSourceMode("repo")}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
+              sourceMode === "repo"
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Análisis de Repositorio
+          </button>
+          <button
+            onClick={() => setSourceMode("plan")}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition-all ${
+              sourceMode === "plan"
+                ? "bg-white text-blue-700 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Observaciones de Usuario
+          </button>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="modulo" className="mb-1.5 block text-sm font-semibold text-gray-800">
-              Nombre del módulo / proyecto
-            </label>
-            <input id="modulo" className={inputCls} value={modulo} onChange={(e) => setModulo(e.target.value)} />
-          </div>
+          {sourceMode === "repo" ? (
+            <div>
+              <label htmlFor="modulo" className="mb-1.5 block text-sm font-semibold text-gray-800">
+                Nombre del módulo / proyecto
+              </label>
+              <input
+                id="modulo"
+                className={inputCls}
+                value={modulo}
+                onChange={(e) => setModulo(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="plan" className="mb-1.5 block text-sm font-semibold text-gray-800">
+                Seleccionar Plan de Prueba
+              </label>
+              <select
+                id="plan"
+                className={inputCls}
+                value={selectedPlanId}
+                onChange={(e) => setSelectedPlanId(e.target.value)}
+              >
+                <option value="">Seleccione un plan...</option>
+                {planes.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.producto}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="sprints" className="mb-1.5 block text-sm font-semibold text-gray-800">
               Número de sprints
             </label>
-            <select id="sprints" className={inputCls} value={numSprints} onChange={(e) => setNumSprints(e.target.value)}>
+            <select
+              id="sprints"
+              className={inputCls}
+              value={numSprints}
+              onChange={(e) => setNumSprints(e.target.value)}
+            >
               <option value="1">1 sprint</option>
               <option value="2">2 sprints</option>
               <option value="3">3 sprints</option>
@@ -245,7 +408,12 @@ export default function AsistenteBacklog() {
           <label htmlFor="escala" className="mb-1.5 block text-sm font-semibold text-gray-800">
             Escala de estimación
           </label>
-          <select id="escala" className={inputCls} value={escala} onChange={(e) => setEscala(e.target.value)}>
+          <select
+            id="escala"
+            className={inputCls}
+            value={escala}
+            onChange={(e) => setEscala(e.target.value)}
+          >
             <option>Fibonacci (1,2,3,5,8,13)</option>
             <option>Tallas (XS,S,M,L,XL)</option>
             <option>Lineal (1-10)</option>
@@ -256,7 +424,9 @@ export default function AsistenteBacklog() {
           <div className="mt-4">
             <label htmlFor="apikey" className="mb-1.5 block text-sm font-semibold text-gray-800">
               API key de Gemini{" "}
-              <span className="font-normal text-gray-500">— o define VITE_GEMINI_API_KEY en .env.local</span>
+              <span className="font-normal text-gray-500">
+                — o define VITE_GEMINI_API_KEY en .env.local
+              </span>
             </label>
             <input
               id="apikey"
@@ -275,13 +445,19 @@ export default function AsistenteBacklog() {
           aria-busy={loading}
           className="mt-5 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:opacity-60"
         >
-          {loading ? "Analizando proyecto y generando…" : "Analizar proyecto y generar Sprint Backlog"}
+          {loading
+            ? sourceMode === "repo"
+              ? "Analizando proyecto y generando…"
+              : "Analizando observaciones y generando…"
+            : sourceMode === "repo"
+            ? "Analizar proyecto y generar Sprint Backlog"
+            : "Analizar observaciones y generar Sprint Backlog"}
         </button>
       </section>
 
       {backlog && (
         <section className="mt-6" aria-label="Sprint backlog generado">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 no-print">
             <h2 className="text-xl font-bold text-gray-900">Sprint Backlog generado</h2>
             <div className="flex gap-2">
               <button
@@ -292,9 +468,15 @@ export default function AsistenteBacklog() {
               </button>
               <button
                 onClick={descargar}
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border-2 border-gray-200 bg-gray-50 px-4 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
               >
                 Descargar .md
+              </button>
+              <button
+                onClick={descargarPDF}
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+              >
+                Descargar PDF
               </button>
             </div>
           </div>
@@ -302,7 +484,7 @@ export default function AsistenteBacklog() {
             ref={resultRef}
             tabIndex={-1}
             aria-live="polite"
-            className="rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+            className="rounded-2xl border border-gray-200 bg-white px-6 py-4 shadow-sm focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 print-container"
           >
             {renderMarkdown(backlog)}
           </div>

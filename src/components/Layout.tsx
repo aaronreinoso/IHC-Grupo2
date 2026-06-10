@@ -256,6 +256,7 @@ export default function Layout() {
           duration-300
           ease-in-out
           md:static
+          no-print
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
           ${isCollapsed ? "w-20" : "w-72"}
         `}
@@ -435,7 +436,7 @@ export default function Layout() {
       </aside>
 
       <div className="relative flex h-screen flex-1 flex-col overflow-hidden bg-gray-50">
-        <header className="z-20 flex shrink-0 items-center border-b border-gray-200 bg-white p-4 shadow-sm md:hidden">
+        <header className="z-20 flex shrink-0 items-center border-b border-gray-200 bg-white p-4 shadow-sm md:hidden no-print">
           <button
             type="button"
             onClick={() => setIsMobileOpen(true)}

@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Force parents to allow overflow and auto height so the full content prints */
+  html, body, #root, 
+  div[class*="h-screen"], 
+  main, 
+  .overflow-hidden, 
+  .overflow-y-auto {
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    display: block !important;
+  }
+
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Optimized container for printing */
+  .print-container {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    background: white !important;
+    display: block !important;
+  }
+
+  /* Ensure colors are preserved if requested, but generally prefer black on white */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  @page {
+    margin: 2cm;
+  }
+}
